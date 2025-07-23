@@ -1,5 +1,8 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
+  "name": "streamkeys",
+  "version": "1.8.4",
+  "description": "Global hotkeys for online music players including support for media keys.",
   "homepage_url": "http://www.streamkeys.com",
   "icons": {
     "48": "icon48.png",
@@ -7,16 +10,18 @@
   },
   "options_page": "html/options.html",
   "background": {
-    "scripts": [
-      "js/background.js"
-    ]
+				
+    "service_worker": "js/background.js"
+	 
   },
-  "browser_action": {
+  "action": {
     "default_title": "Streamkeys",
     "default_popup": "html/popup.html",
     "default_icon": "icon38.png"
   },
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
+"content_security_policy": {
+  "extension_pages": "script-src 'self'; object-src 'self'"
+},
   "content_scripts": [
     {
       "matches": [
@@ -37,19 +42,30 @@
     }
   ],
   "web_accessible_resources": [
-    "js/inject/hoopla_inject.js",
-    "js/inject/musickit_inject.js",
-    "js/inject/palcomp3_inject.js",
-    "js/inject/seesu_inject.js",
-    "js/controllers/*"
+    {
+      "resources": [
+        "js/inject/hoopla_inject.js",
+        "js/inject/musickit_inject.js",
+        "js/inject/palcomp3_inject.js",
+        "js/inject/seesu_inject.js",
+        "js/controllers/*"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
   ],
   "permissions": [
     "tabs",
     "storage",
+    "scripting"
+  ],
+  "host_permissions": [
     "http://*/*",
     "https://*/*"
-  ],
-  "optional_permissions": [
+  ],  "optional_permissions": [
+						   
     "notifications",
     "nativeMessaging"
   ],
@@ -97,13 +113,13 @@
     "dislike": {
       "global": true,
       "description": "Toggle dislike"
-    },
-    "playerStateNotify": {
+    },    "playerStateNotify": {
+						  
       "global": true,
       "description": "Send notification of player(s) state"
     }
-  },
-  "name": "streamkeys",
-  "version": "1.8.4",
-  "description": "Global hotkeys for online music players including support for media keys."
+  }
+					   
+					 
+																							
 }
