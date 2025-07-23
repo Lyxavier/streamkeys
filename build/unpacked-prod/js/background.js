@@ -128,23 +128,26 @@
    */
   chrome.runtime.onMessage.addListener(function(request, sender, response) {
     if(request.action === "update_keys") {
-      window.skSites.loadSettings();
+      self.skSites.loadSettings();
     }
     if(request.action === "update_site_settings") {
       console.log("updating site settings: ", request.siteKey, request.siteState);
-      window.skSites.setSiteState(request.siteKey, request.siteState).then(function() {
+      self.skSites.setSiteState(request.siteKey, request.siteState).then(function() {
         response(true);
       });
     }
     if(request.action === "get_sites") {
-      response(window.skSites.sites);
+      response(self.skSites.sites);
     }
     if(request.action === "get_site_controller") {
-      response(window.skSites.getController(sender.tab.url));
+      response(self.skSites.getController(sender.tab.url));
     }
     if(request.action === "inject_controller") {
       console.log("Inject: " + request.file + " into: " + sender.tab.id);
-      chrome.tabs.executeScript(sender.tab.id, {file: request.file});
+      chrome.scripting.executeScript({
+        target: {tabId: sender.tab.id},
+        files: [request.file]
+      });
       if (mprisPort) mprisPort.postMessage({ command: "add_player" });
     }
     if(request.action === "check_music_site") {
@@ -153,9 +156,9 @@
        * We should only inject into actual tabs
        */
       if(sender.tab.index === -1) return response("no_inject");
-      response(window.skSites.checkMusicSite(sender.tab.url));
+      response(self.skSites.checkMusicSite(sender.tab.url));
     }
-    if(request.action === "get_commands") response(window.coms);
+    if(request.action === "get_commands") response(self.coms);
     if(request.action === "command") processCommand(request);
     if(request.action === "update_player_state") {
       tabStates[sender.tab.id] = {
@@ -170,7 +173,7 @@
       if (mprisPort) handleStateData(updateMPRISState);
     }
     if(request.action === "get_music_tabs") {
-      var musicTabs = window.skSites.getMusicTabs();
+      var musicTabs = self.skSites.getMusicTabs();
       musicTabs.then(function(tabs) {
         response(tabs);
       });
@@ -178,8 +181,8 @@
       return true;
     }
     if(request.action === "send_change_notification") {
-      if (window.skSites.checkShowNotifications(sender.tab.url) &&
-          window.skSites.checkTabEnabled(sender.tab.id)) {
+      if (self.skSites.checkShowNotifications(sender.tab.url) &&
+          self.skSites.checkTabEnabled(sender.tab.id)) {
         sendChangeNotification(request, sender);
       }
     }
@@ -202,21 +205,21 @@
       notificationItems.push({ title: (request.stateData.currentTime || "").trim(), message: (request.stateData.totalTime || "").trim() });
     }
 
-    chrome.notifications.create(sender.id + request.stateData.siteName, {
-      type: "list",
+    // Manifest V3: Use Notification API
+    const notificationId = sender.id + request.stateData.siteName;
+    const options = {
+      type: "basic",
+      iconUrl: request.stateData.art || chrome.runtime.getURL("icon128.png"),
       title: request.stateData.siteName,
-      message: (request.stateData.song || "").trim(),
-      iconUrl: request.stateData.art || chrome.extension.getURL("icon128.png"),
-      items: notificationItems
-    }, function(notificationId) {
-      if(notificationTimeouts[notificationId])
-      {
-        clearTimeout(notificationTimeouts[notificationId]);
-        delete notificationTimeouts[notificationId];
+      message: (request.stateData.song || "").trim()
+    };
+    chrome.notifications.create(notificationId, options, function(id) {
+      if(notificationTimeouts[id]) {
+        clearTimeout(notificationTimeouts[id]);
+        delete notificationTimeouts[id];
       }
-
-      notificationTimeouts[notificationId] = setTimeout(function() {
-        chrome.notifications.clear(notificationId);
+      notificationTimeouts[id] = setTimeout(function() {
+        chrome.notifications.clear(id);
       }, 5000);
     });
   };
@@ -266,9 +269,9 @@
       window.coms = cmds;
     });
 
-    // Define skSites as a sitelist in global context
-    window.skSites = new Sitelist();
-    window.skSites.loadSettings();
+    // Replace window with self for global context
+    self.skSites = new Sitelist();
+    self.skSites.loadSettings();
   });
 
 

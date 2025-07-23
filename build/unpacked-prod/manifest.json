@@ -57,16 +57,16 @@
     }
   ],
   "permissions": [
-    "tabs",
     "storage",
-    "scripting"
+    "tabs",
+    "scripting",
+    "notifications"
   ],
   "host_permissions": [
     "http://*/*",
     "https://*/*"
   ],  "optional_permissions": [
 						   
-    "notifications",
     "nativeMessaging"
   ],
   "commands": {
