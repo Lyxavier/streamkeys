@@ -429,7 +429,10 @@ function loadInitialData() {
     // Load enabled tabs
     enabled.forEach(tab => {
       chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
-        if (state) {
+        if (chrome.runtime.lastError) {
+          console.warn("Error getting player state for tab", tab.id, ":", chrome.runtime.lastError.message);
+          // Tab likely closed or unavailable, skip it
+        } else if (state) {
           const tabData = Object.assign({}, state, {
             tabId: tab.id,
             faviconUrl: tab.favIconUrl,
@@ -453,7 +456,10 @@ function loadInitialData() {
     // Load disabled tabs
     disabled.forEach(tab => {
       chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
-        if (state) {
+        if (chrome.runtime.lastError) {
+          console.warn("Error getting player state for disabled tab", tab.id, ":", chrome.runtime.lastError.message);
+          // Tab likely closed or unavailable, skip it
+        } else if (state) {
           const tabData = Object.assign({}, state, {
             tabId: tab.id,
             faviconUrl: tab.favIconUrl,
