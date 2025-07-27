@@ -1,0 +1,407 @@
+/* Streamkeys MV3 Popup - V2 Compatible Styling */
+html {
+  padding: 0;
+  margin: 0;
+  min-height: 100px;
+  height: 0;
+}
+
+body {
+  width: 290px;
+  padding: 0;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif !important;
+  margin: 0;
+}
+
+a,
+a:hover,
+a:visited {
+  text-decoration: none;
+  color: #000000;
+}
+
+.header {
+  background-color: #2880c7;
+  border-left: 1px solid #2880c7;
+  border-right: 1px solid #2880c7;
+  border-top: 1px solid #2880c7;
+  height: 38px;
+  padding: 6px;
+  text-align: center;
+}
+
+.header a {
+  color: white;
+  display: block;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+.header a:hover {
+  color: #e6e6e6;
+  text-decoration: none;
+}
+
+#player {
+  border-left: 1px solid #2880c7;
+  border-right: 1px solid #2880c7;
+  height: auto;
+  min-height: 30px;
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+.no-sites {
+  font-size: 16px;
+  font-weight: 500;
+  padding-top: 10px;
+  color: #666;
+}
+
+.site-controls {
+  min-height: 60px;
+  overflow: hidden;
+}
+
+.site-controls.disabled {
+  opacity: 0.5;
+}
+
+.site-controls.disabled .player-controls-button-like,
+.site-controls.disabled .player-controls-button-dislike,
+.site-controls.disabled .player-controls-button-play,
+.site-controls.disabled .player-controls-button-prev,
+.site-controls.disabled .player-controls-button-next,
+.site-controls.disabled .site-title,
+.site-controls.disabled .site-favicon,
+.site-controls.disabled .song-data {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.player-row {
+  padding: 5px 0 0 0;
+  overflow: hidden;
+}
+
+.site-title-area {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin-left: 6px;
+  height: 22px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  width: 290px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.site-favicon {
+  border: none;
+  height: 18px;
+  width: 18px;
+  margin-right: 8px;
+}
+
+.site-title {
+  font-size: 18px;
+  vertical-align: middle;
+  flex: 1;
+  cursor: pointer;
+}
+
+.site-title:hover {
+  text-decoration: underline;
+}
+
+.song-data {
+  font-size: 15px;
+  height: 20px;
+  margin-bottom: 6px;
+  margin-top: -4px;
+  overflow: hidden;
+  padding: 0 4px 0 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.song-text {
+  display: inline-block;
+}
+
+.player-controls {
+  background-color: #2880c7;
+  padding: 2px 0;
+  -webkit-user-select: none;
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.player-controls-button {
+  background: none;
+  border: none;
+  color: white;
+  min-width: 40px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin: 0 2px;
+}
+
+.player-controls-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.player-controls-button:disabled,
+.player-controls-button.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.player-controls-button.active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.options-footer {
+  border-left: 1px solid #2880c7;
+  border-right: 1px solid #2880c7;
+  border-bottom: 2px solid #2880c7;
+  display: block;
+  height: 44px;
+  padding: 0;
+  text-align: center;
+  background: white;
+}
+
+.options-footer a {
+  color: #2880c7;
+  font-size: 14px;
+  margin: 0 5px;
+  line-height: 44px;
+}
+
+.options-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Additional MDL button fallback styles for MV3 */
+.mdl-button {
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: #000;
+  position: relative;
+  height: 36px;
+  margin: 0;
+  min-width: 64px;
+  padding: 0 16px;
+  display: inline-block;
+  font-family: "Roboto","Helvetica","Arial",sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  overflow: hidden;
+  will-change: box-shadow;
+  transition: box-shadow 0.2s cubic-bezier(0.4, 0, 1, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  line-height: 36px;
+  vertical-align: middle;
+}
+
+.mdl-button:hover {
+  background-color: rgba(158,158,158,.2);
+}
+
+.mdl-button:active {
+  background-color: rgba(158,158,158,.4);
+}
+
+.mdl-button--raised {
+  background: #fff;
+  box-shadow: 0 2px 2px 0 rgba(0,0,0,.14), 0 3px 1px -2px rgba(0,0,0,.2), 0 1px 5px 0 rgba(0,0,0,.12);
+}
+
+.mdl-button--raised:hover {
+  box-shadow: 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12), 0 2px 4px -1px rgba(0,0,0,.2);
+}
+
+.mdl-button--colored {
+  color: #3f51b5;
+}
+
+.mdl-button--colored.mdl-button--raised {
+  background: #3f51b5;
+  color: white;
+}
+
+.options {
+  border-left: 1px solid #2880c7;
+  border-right: 1px solid #2880c7;
+  border-bottom: 1px solid #2880c7;
+  height: 44px;
+  padding: 8px;
+  text-align: center;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.options button {
+  margin: 0 4px;
+  flex: 1;
+  max-width: 80px;
+}
+
+/* Player controls container styling */
+.player-controls-container {
+  background-color: #2880c7;
+  padding: 8px 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.player-controls-container .player-controls-button {
+  background: none;
+  border: none;
+  color: white;
+  min-width: 40px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin: 0 2px;
+  border-radius: 2px;
+}
+
+.player-controls-container .player-controls-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.player-controls-container .player-controls-button:disabled,
+.player-controls-container .player-controls-button.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.player-controls-container .player-controls-button.active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Site settings styling */
+.site-settings {
+  background: #f5f5f5;
+  padding: 12px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-item.left {
+  flex: 1;
+}
+
+.settings-item.right {
+  flex-shrink: 0;
+}
+
+.control-label {
+  font-weight: 500;
+  color: #666;
+  margin-right: 8px;
+}
+
+.priority-text {
+  font-weight: 500;
+  color: #333;
+  min-width: 20px;
+  text-align: center;
+}
+
+.priority-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.priority-button:hover {
+  color: #333;
+}
+
+.priority-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.advanced-settings-button {
+  padding: 8px 16px !important;
+  min-width: auto !important;
+  height: 32px !important;
+  line-height: 16px !important;
+  font-size: 12px !important;
+}
+
+/* Site tab container styling */
+.site-tab-container {
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 8px;
+}
+
+.site-tab-container:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.site-tab-container.disabled {
+  opacity: 0.6;
+}
+
+.site-tab-container.disabled .player-controls-button-like,
+.site-tab-container.disabled .player-controls-button-dislike,
+.site-tab-container.disabled .player-controls-button-play,
+.site-tab-container.disabled .player-controls-button-prev,
+.site-tab-container.disabled .player-controls-button-next {
+  opacity: 0.3;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.disabled-site-tab-container {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  margin-top: 8px;
+  border-radius: 4px;
+}

@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Streamkeys MV3",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"grunt:dev"
+			],
+			"group": "build",
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"isBackground": false
+		}
+	]
+}

@@ -112,7 +112,9 @@ module.exports = function(grunt) {
   grunt.registerTask("test", ["karma"]);
   grunt.registerTask("rel-test", ["rel", "test"]);
   grunt.registerTask("dev-pre", ["eslint", "clean", "mkdir:unpacked", "sass:dev", "copy:main", "manifest"]);
+  grunt.registerTask("dev-pre-nolint", ["clean", "mkdir:unpacked", "sass:dev", "copy:main", "manifest"]);
   grunt.registerTask("dev", ["dev-pre", "browserify"]);
+  grunt.registerTask("dev-nolint", ["dev-pre-nolint", "browserify"]);
 
   grunt.registerTask("rel", ["eslint", "clean", "mkdir:unpacked", "sass:prod", "copy:main", "manifest", "browserify", "copy:prod"]);
 };

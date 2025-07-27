@@ -24,10 +24,12 @@
   "scripts": {
     "test": "karma start --single-run",
     "grunt:dev": "grunt dev",
+    "grunt:dev:nolint": "grunt dev-nolint",
     "grunt:rel": "grunt rel",
     "grunt:watch": "grunt watch",
     "grunt:lint": "grunt lint",
-    "develop": "npm-run-all grunt:dev grunt:watch"
+    "develop": "npm-run-all grunt:dev grunt:watch",
+    "build:mv3": "node build-mv3.js"
   },
   "devDependencies": {
     "chai": "^4.3.4",

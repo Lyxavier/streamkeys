@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Streamkeys MV3 Test</title>
+</head>
+<body>
+  <h1>Streamkeys MV3 Test Page</h1>
+  <p>This page can be used to test the Streamkeys extension after MV3 migration.</p>
+  
+  <h2>Test Instructions:</h2>
+  <ol>
+    <li><strong>Load the extension in Chrome Developer Mode:</strong>
+      <ul>
+        <li>Open Chrome and go to <code>chrome://extensions/</code></li>
+        <li>Enable "Developer mode" (top right toggle)</li>
+        <li>Click "Load unpacked"</li>
+        <li>Select the directory: <code>D:\Documents\GitHub\streamkeys\streamkeys-master\build\mv3</code></li>
+        <li>The extension should load successfully now!</li>
+      </ul>
+    </li>
+    <li>Navigate to a supported music site (e.g., spotify.com, youtube.com)</li>
+    <li>Test keyboard shortcuts:
+      <ul>
+        <li>MediaPlayPause - Play/Pause</li>
+        <li>MediaNextTrack - Next track</li>
+        <li>MediaPrevTrack - Previous track</li>
+        <li>Ctrl+Shift+2 - Mute</li>
+      </ul>
+    </li>
+    <li>Click the extension icon to test popup</li>
+    <li>Check browser console and extension service worker for errors</li>
+  </ol>
+  
+  <h2>Supported Sites:</h2>
+  <ul>
+    <li><a href="https://open.spotify.com" target="_blank">Spotify</a></li>
+    <li><a href="https://music.youtube.com" target="_blank">YouTube Music</a></li>
+    <li><a href="https://soundcloud.com" target="_blank">SoundCloud</a></li>
+    <li><a href="https://pandora.com" target="_blank">Pandora</a></li>
+    <li><a href="https://music.apple.com" target="_blank">Apple Music</a></li>
+    <li><a href="https://deezer.com" target="_blank">Deezer</a></li>
+  </ul>
+  
+  <h2>Troubleshooting:</h2>
+  <ul>
+    <li><strong>Extension fails to load:</strong> Make sure you're loading the <code>build/mv3</code> directory, not the root directory</li>
+    <li><strong>"Required value 'name' is missing":</strong> Fixed - manifest now includes required name, version, and description</li>
+    <li><strong>"web_accessible_resources parsing error":</strong> Fixed - updated to MV3 format with objects instead of strings</li>
+    <li><strong>"require is not defined" popup error:</strong> Fixed - created new popup without browserify dependencies</li>
+    <li><strong>"popup.css not found":</strong> Fixed - created standalone CSS file</li>
+    <li><strong>Keyboard shortcuts not working:</strong> Check that the music site is supported and playing audio</li>
+    <li><strong>Service worker errors:</strong> Check the Chrome extension's service worker console for errors</li>
+    <li><strong>Popup not working:</strong> Ensure the popup HTML and JS files are properly loaded</li>
+  </ul>
+  
+  <h2>Build Information:</h2>
+  <p><strong>Extension Name:</strong> Streamkeys</p>
+  <p><strong>Version:</strong> 1.8.4</p>
+  <p><strong>Manifest Version:</strong> 3</p>
+  <p><strong>Build Directory:</strong> <code>D:\Documents\GitHub\streamkeys\streamkeys-master\build\mv3</code></p>
+</body>
+</html>

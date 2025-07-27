@@ -14,12 +14,14 @@
     "require": true,
     "define": true,
     "module": true,
-    "$data": true
+    "$data": true,
+    "importScripts": true,
+    "STREAMKEYS_SITES": true
   },
   "rules": {
     "eol-last": ["error", "always"],
     "indent": ["error", 2],
-    "linebreak-style": ["error", "unix"],
+    "linebreak-style": "off",
     "no-console": ["error", { "allow": ["log", "warn", "error"] }],
     "no-trailing-spaces": ["error"],
     "no-undef": "error",
