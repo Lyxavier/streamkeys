@@ -27,8 +27,9 @@ function keepServiceWorkerAlive() {
 keepServiceWorkerAlive();
 
 // Import site list and utilities
+var STREAMKEYS_SITES;
 try {
-  importScripts("./sites-mv3.js");
+  STREAMKEYS_SITES = require("./sites-mv3.js");
   console.log("Background script loaded, STREAMKEYS_SITES available:", typeof STREAMKEYS_SITES !== "undefined");
   if (typeof STREAMKEYS_SITES !== "undefined") {
     console.log("Sites count:", Object.keys(STREAMKEYS_SITES).length);
@@ -36,6 +37,8 @@ try {
   }
 } catch (error) {
   console.error("Failed to import sites-mv3.js:", error);
+  // Fallback for MV3 - define minimal sites structure
+  STREAMKEYS_SITES = {};
 }
 
 // Simple lodash-like utilities for MV3
