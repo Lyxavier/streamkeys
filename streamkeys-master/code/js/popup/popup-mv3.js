@@ -407,55 +407,83 @@ function loadInitialData() {
     VirtualState.expectedTabs = enabled.length + disabled.length;
     VirtualState.loadedTabs = 0;
 
-    // Load enabled tabs
+    // Load enabled tabs with validation
     enabled.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+      // First validate that the tab still exists
+      chrome.tabs.get(tab.id, () => {
         if (chrome.runtime.lastError) {
-          console.warn("Error getting player state for tab", tab.id, ":", chrome.runtime.lastError.message);
-        } else if (state) {
-          const tabData = Object.assign({}, state, {
-            tabId: tab.id,
-            faviconUrl: tab.favIconUrl,
-            siteName: tab.siteName,
-            siteKey: tab.streamkeysSiteKey,
-            priority: tab.streamkeysPriority || 5,
-            streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
-          });
-
-          VirtualState.tabs.set(tab.id, createTab(tabData));
+          console.log("Tab", tab.id, "no longer exists, skipping");
+          VirtualState.loadedTabs++;
+          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
+            VirtualState.isLoading = false;
+            updateUI();
+          }
+          return;
         }
 
-        VirtualState.loadedTabs++;
-        if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
-          VirtualState.isLoading = false;
-          updateUI();
-        }
+        // Tab exists, now try to get player state
+        chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+          if (chrome.runtime.lastError) {
+            console.warn("Error getting player state for tab", tab.id, ":", chrome.runtime.lastError.message);
+          } else if (state) {
+            const tabData = Object.assign({}, state, {
+              tabId: tab.id,
+              faviconUrl: tab.favIconUrl,
+              siteName: tab.siteName,
+              siteKey: tab.streamkeysSiteKey,
+              priority: tab.streamkeysPriority || 5,
+              streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
+            });
+
+            VirtualState.tabs.set(tab.id, createTab(tabData));
+          }
+
+          VirtualState.loadedTabs++;
+          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
+            VirtualState.isLoading = false;
+            updateUI();
+          }
+        });
       });
     });
 
-    // Load disabled tabs
+    // Load disabled tabs with validation
     disabled.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+      // First validate that the tab still exists
+      chrome.tabs.get(tab.id, () => {
         if (chrome.runtime.lastError) {
-          console.warn("Error getting player state for disabled tab", tab.id, ":", chrome.runtime.lastError.message);
-        } else if (state) {
-          const tabData = Object.assign({}, state, {
-            tabId: tab.id,
-            faviconUrl: tab.favIconUrl,
-            siteName: tab.siteName,
-            siteKey: tab.streamkeysSiteKey,
-            priority: tab.streamkeysPriority || 5,
-            streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
-          });
-
-          VirtualState.disabledTabs.set(tab.id, createTab(tabData));
+          console.log("Disabled tab", tab.id, "no longer exists, skipping");
+          VirtualState.loadedTabs++;
+          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
+            VirtualState.isLoading = false;
+            updateUI();
+          }
+          return;
         }
 
-        VirtualState.loadedTabs++;
-        if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
-          VirtualState.isLoading = false;
-          updateUI();
-        }
+        // Tab exists, now try to get player state
+        chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+          if (chrome.runtime.lastError) {
+            console.warn("Error getting player state for disabled tab", tab.id, ":", chrome.runtime.lastError.message);
+          } else if (state) {
+            const tabData = Object.assign({}, state, {
+              tabId: tab.id,
+              faviconUrl: tab.favIconUrl,
+              siteName: tab.siteName,
+              siteKey: tab.streamkeysSiteKey,
+              priority: tab.streamkeysPriority || 5,
+              streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
+            });
+
+            VirtualState.disabledTabs.set(tab.id, createTab(tabData));
+          }
+
+          VirtualState.loadedTabs++;
+          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
+            VirtualState.isLoading = false;
+            updateUI();
+          }
+        });
       });
     });
   });
