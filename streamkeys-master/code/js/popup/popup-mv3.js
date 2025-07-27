@@ -1,353 +1,403 @@
 "use strict";
 
-console.log("*** VIRTUAL DOM + SHADOW DOM - ZERO FLICKER ***");
+console.log("*** REACTIVE UI - NO FLICKER APPROACH ***");
 
-// State management with virtual representation
-let VirtualState = {
+// Lightweight reactive system (inspired by MV2's Knockout observables)
+class Observable {
+  constructor(initialValue) {
+    this._value = initialValue;
+    this._listeners = [];
+  }
+
+  get() {
+    return this._value;
+  }
+
+  set(newValue) {
+    if (this._value !== newValue) {
+      this._value = newValue;
+      this._listeners.forEach(listener => listener(newValue));
+    }
+  }
+
+  subscribe(listener) {
+    this._listeners.push(listener);
+    return () => {
+      const index = this._listeners.indexOf(listener);
+      if (index > -1) this._listeners.splice(index, 1);
+    };
+  }
+}
+
+class ComputedObservable extends Observable {
+  constructor(computeFn, dependencies = []) {
+    super(null);
+    this._computeFn = computeFn;
+    this._dependencies = dependencies;
+
+    // Subscribe to dependencies
+    dependencies.forEach(dep => {
+      dep.subscribe(() => this._recompute());
+    });
+
+    this._recompute();
+  }
+
+  _recompute() {
+    const newValue = this._computeFn();
+    if (this._value !== newValue) {
+      this._value = newValue;
+      this._listeners.forEach(listener => listener(newValue));
+    }
+  }
+}
+
+// Music tab model with observables (like MV2 MusicTab)
+class MusicTab {
+  constructor(data) {
+    // Observable properties (automatically trigger UI updates)
+    this.id = data.tabId;
+    this.favicon = new Observable(data.faviconUrl || "");
+    this.siteName = new Observable(data.siteName || "Unknown");
+    this.siteKey = data.siteKey || "";
+    this.song = new Observable(data.song || null);
+    this.artist = new Observable(data.artist || null);
+    this.enabled = new Observable(data.streamkeysEnabled !== undefined ? data.streamkeysEnabled : true);
+    this.priority = new Observable(data.priority || 5);
+    this.playing = new Observable(data.isPlaying || false);
+    this.canPlay = new Observable(data.canPlayPause || false);
+    this.canNext = new Observable(data.canPlayNext || false);
+    this.canPrev = new Observable(data.canPlayPrev || false);
+    this.showSettings = new Observable(false);
+
+    // Computed observables
+    this.songText = new ComputedObservable(() => {
+      const songVal = this.song.get();
+      if (!songVal) return "";
+      const artistVal = this.artist.get();
+      return artistVal ? `${artistVal} - ${songVal}` : songVal;
+    }, [this.song, this.artist]);
+
+    this.playIcon = new ComputedObservable(() => {
+      return this.playing.get() ? "pause_arrow" : "play_arrow";
+    }, [this.playing]);
+
+    // Auto-sync priority changes to background
+    this.priority.subscribe((newPriority) => {
+      chrome.runtime.sendMessage({
+        action: "update_site_settings",
+        siteKey: this.siteKey,
+        siteState: { priority: newPriority }
+      });
+    });
+  }
+
+  updateState(stateData) {
+    // Update only changed properties (reactive updates)
+    if (stateData.song !== undefined) this.song.set(stateData.song);
+    if (stateData.artist !== undefined) this.artist.set(stateData.artist);
+    if (stateData.isPlaying !== undefined) this.playing.set(stateData.isPlaying);
+    if (stateData.canPlayPause !== undefined) this.canPlay.set(stateData.canPlayPause);
+    if (stateData.canPlayNext !== undefined) this.canNext.set(stateData.canPlayNext);
+    if (stateData.canPlayPrev !== undefined) this.canPrev.set(stateData.canPlayPrev);
+  }
+}
+
+// Main popup state
+const PopupState = {
   tabs: new Map(),
   disabledTabs: new Map(),
-  isLoading: true,
-  showDisabled: false,
+  isLoading: new Observable(true),
+  showDisabled: new Observable(false),
   expectedTabs: 0,
-  loadedTabs: 0,
-  virtualTree: null, // Virtual representation of UI
-  shadowRoot: null   // Shadow DOM container
+  loadedTabs: 0
 };
 
-// Virtual DOM node structure
-class VNode {
-  constructor(tag, props = {}, children = []) {
-    this.tag = tag;
-    this.props = props;
-    this.children = children;
-    this.element = null; // Reference to real DOM element
-    this.key = props.key || null;
-  }
+// DOM binding utilities (similar to Knockout's data-bind)
+function bindElement(element, observable, updateFn) {
+  // Initial update
+  updateFn(observable.get());
+
+  // Subscribe to changes
+  return observable.subscribe(updateFn);
 }
 
-// Create virtual DOM tree
-function createVirtualTree() {
-  const enabledTabs = Array.from(VirtualState.tabs.values())
-    .filter(tab => tab.canPlay)
-    .sort((a, b) => {
-      if (a.priority !== b.priority) return b.priority - a.priority;
-      if (a.siteName !== b.siteName) return a.siteName.localeCompare(b.siteName);
-      return a.id - b.id;
-    });
-
-  const children = [];
-
-  if (VirtualState.isLoading) {
-    children.push(new VNode("div", { class: "no-sites" }, ["Loading..."]));
-  } else if (enabledTabs.length === 0 && VirtualState.disabledTabs.size === 0) {
-    children.push(new VNode("div", { class: "no-sites" }, ["No music sites open."]));
-  } else {
-    // Add enabled tabs
-    enabledTabs.forEach(tab => {
-      children.push(createTabVNode(tab, false));
-    });
-
-    // Add disabled section if needed
-    if (VirtualState.disabledTabs.size > 0) {
-      const toggleText = VirtualState.showDisabled ? "Hide Disabled Sites" : "Show Disabled Sites";
-      const toggleIcon = VirtualState.showDisabled ? "arrow_drop_up" : "arrow_drop_down";
-
-      children.push(new VNode("button", {
-        class: "mdl-button mdl-js-button mdl-button--raised mdl-button--colored",
-        "data-action": "toggle-disabled"
-      }, [
-        new VNode("span", {}, [toggleText]),
-        new VNode("i", { class: "material-icons" }, [toggleIcon])
-      ]));
-
-      if (VirtualState.showDisabled) {
-        const disabledContainer = new VNode("div", { class: "disabled-site-tab-container" }, []);
-        Array.from(VirtualState.disabledTabs.values()).forEach(tab => {
-          disabledContainer.children.push(createTabVNode(tab, true));
-        });
-        children.push(disabledContainer);
-      }
-    }
-  }
-
-  return new VNode("div", { id: "virtual-player" }, children);
+function bindText(element, observable) {
+  return bindElement(element, observable, (value) => {
+    element.textContent = value || "";
+  });
 }
 
-function createTabVNode(tab, isDisabled) {
-  const disabled = !tab.enabled || isDisabled;
-  const playIcon = tab.playing ? "pause_arrow" : "play_arrow";
-
-  const controls = [
-    new VNode("button", {
-      class: "control-btn",
-      "data-action": "settings",
-      "data-id": tab.id.toString()
-    }, [new VNode("i", { class: "material-icons md-dark" }, ["more_vert"])]),
-  ];
-
-  if (tab.canPrev) {
-    controls.push(new VNode("button", {
-      class: "control-btn",
-      "data-action": "prev",
-      "data-id": tab.id.toString()
-    }, [new VNode("i", { class: "material-icons md-dark" }, ["fast_rewind"])]));
-  }
-
-  controls.push(new VNode("button", {
-    class: "control-btn",
-    "data-action": "play",
-    "data-id": tab.id.toString()
-  }, [new VNode("i", { class: "material-icons md-dark" }, [playIcon])]));
-
-  if (tab.canNext) {
-    controls.push(new VNode("button", {
-      class: "control-btn",
-      "data-action": "next",
-      "data-id": tab.id.toString()
-    }, [new VNode("i", { class: "material-icons md-dark" }, ["fast_forward"])]));
-  }
-
-  controls.push(new VNode("button", {
-    class: `control-btn ${!tab.enabled ? "active" : ""}`,
-    "data-action": "toggle",
-    "data-id": tab.id.toString()
-  }, [new VNode("i", { class: "material-icons md-dark" }, ["not_interested"])]));
-
-  const children = [
-    new VNode("div", { class: "player-row player-container" }, [
-      new VNode("div", { class: "site-data" }, [
-        new VNode("span", { class: "site-priority-label" }, [tab.priority.toString()]),
-        new VNode("a", {
-          href: "#",
-          class: "site-link",
-          "data-action": "open-tab",
-          "data-id": tab.id.toString()
-        }, [
-          new VNode("img", {
-            class: "site-favicon",
-            src: tab.favicon,
-            onerror: "this.style.display=\"none\""
-          }),
-          new VNode("span", { class: "site-title" }, [tab.siteName])
-        ])
-      ]),
-      ...(tab.songText ? [new VNode("div", { class: "marquee song-data" }, [
-        new VNode("p", { class: "song-text" }, [tab.songText])
-      ])] : [])
-    ]),
-    new VNode("div", { class: "player-controls-container player-container" }, controls)
-  ];
-
-  if (tab.showSettings) {
-    children.push(new VNode("div", { class: "site-settings", style: "display: block" }, [
-      new VNode("div", { class: "settings-item left" }, [
-        new VNode("label", {}, ["Priority"]),
-        new VNode("button", {
-          class: "control-btn",
-          "data-action": "priority-",
-          "data-id": tab.id.toString(),
-          disabled: tab.priority <= 1
-        }, [new VNode("i", { class: "material-icons" }, ["remove_circle"])]),
-        new VNode("span", {}, [tab.priority.toString()]),
-        new VNode("button", {
-          class: "control-btn",
-          "data-action": "priority+",
-          "data-id": tab.id.toString(),
-          disabled: tab.priority >= 9
-        }, [new VNode("i", { class: "material-icons" }, ["add_circle"])])
-      ]),
-      new VNode("div", { class: "settings-item right" }, [
-        new VNode("button", {
-          class: "mdl-button mdl-button--raised",
-          "data-action": "options"
-        }, ["Advanced Settings"])
-      ])
-    ]));
-  }
-
-  return new VNode("div", {
-    class: `site-tab-container ${disabled ? "disabled" : ""}`,
-    key: `tab-${tab.id}`,
-    "data-tab-id": tab.id.toString()
-  }, children);
+function bindClass(element, observable, className) {
+  return bindElement(element, observable, (value) => {
+    element.classList.toggle(className, !!value);
+  });
 }
 
-// Render virtual DOM to shadow DOM (isolated from main DOM)
-function renderToShadowDOM(vnode) {
-  if (typeof vnode === "string") {
-    return document.createTextNode(vnode);
-  }
+function bindVisible(element, observable) {
+  return bindElement(element, observable, (value) => {
+    element.style.display = value ? "" : "none";
+  });
+}
 
-  const element = document.createElement(vnode.tag);
-
-  // Set properties
-  Object.keys(vnode.props).forEach(key => {
-    if (key === "style") {
-      element.style.cssText = vnode.props[key];
-    } else if (key === "class") {
-      element.className = vnode.props[key];
-    } else if (key.startsWith("data-")) {
-      element.setAttribute(key, vnode.props[key]);
-    } else if (key === "disabled") {
-      element.disabled = vnode.props[key];
+function bindAttribute(element, observable, attributeName) {
+  return bindElement(element, observable, (value) => {
+    if (value !== null && value !== undefined) {
+      element.setAttribute(attributeName, value);
     } else {
-      element.setAttribute(key, vnode.props[key]);
+      element.removeAttribute(attributeName);
     }
   });
-
-  // Render children
-  vnode.children.forEach(child => {
-    const childElement = renderToShadowDOM(child);
-    element.appendChild(childElement);
-  });
-
-  vnode.element = element;
-  return element;
 }
 
-// Initialize Shadow DOM container
-function initializeShadowDOM() {
+// Create DOM elements with reactive bindings (no innerHTML replacement)
+function createTabElement(tab) {
+  const container = document.createElement("div");
+  container.className = "site-tab-container";
+  container.dataset.tabId = tab.id;
+
+  // Bind enabled/disabled state
+  bindClass(container, tab.enabled, "enabled");
+  bindClass(container, new ComputedObservable(() => !tab.enabled.get(), [tab.enabled]), "disabled");
+
+  // Player row
+  const playerRow = document.createElement("div");
+  playerRow.className = "player-row player-container";
+
+  // Site data
+  const siteData = document.createElement("div");
+  siteData.className = "site-data";
+
+  const priorityLabel = document.createElement("span");
+  priorityLabel.className = "site-priority-label";
+  bindText(priorityLabel, tab.priority);
+
+  const siteLink = document.createElement("a");
+  siteLink.href = "#";
+  siteLink.className = "site-link";
+  siteLink.onclick = (e) => {
+    e.preventDefault();
+    chrome.tabs.update(tab.id, { active: true });
+    window.close();
+  };
+
+  const favicon = document.createElement("img");
+  favicon.className = "site-favicon";
+  bindAttribute(favicon, tab.favicon, "src");
+  favicon.onerror = () => favicon.style.display = "none";
+
+  const siteTitle = document.createElement("span");
+  siteTitle.className = "site-title";
+  bindText(siteTitle, tab.siteName);
+
+  siteLink.appendChild(favicon);
+  siteLink.appendChild(siteTitle);
+  siteData.appendChild(priorityLabel);
+  siteData.appendChild(siteLink);
+
+  // Song data (conditional)
+  const songContainer = document.createElement("div");
+  songContainer.className = "marquee song-data";
+
+  const songText = document.createElement("p");
+  songText.className = "song-text";
+  bindText(songText, tab.songText);
+
+  songContainer.appendChild(songText);
+
+  // Show/hide song container based on songText
+  bindVisible(songContainer, new ComputedObservable(() => !!tab.songText.get(), [tab.songText]));
+
+  playerRow.appendChild(siteData);
+  playerRow.appendChild(songContainer);
+
+  // Controls container
+  const controlsContainer = document.createElement("div");
+  controlsContainer.className = "player-controls-container player-container";
+
+  // Settings button
+  const settingsBtn = document.createElement("button");
+  settingsBtn.className = "control-btn";
+  settingsBtn.innerHTML = "<i class=\"material-icons md-dark\">more_vert</i>";
+  settingsBtn.onclick = () => {
+    tab.showSettings.set(!tab.showSettings.get());
+  };
+  controlsContainer.appendChild(settingsBtn);
+
+  // Previous button
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "control-btn";
+  prevBtn.innerHTML = "<i class=\"material-icons md-dark\">fast_rewind</i>";
+  prevBtn.onclick = () => sendCommand(tab.id, "playPrev");
+  bindVisible(prevBtn, tab.canPrev);
+  controlsContainer.appendChild(prevBtn);
+
+  // Play/pause button
+  const playBtn = document.createElement("button");
+  playBtn.className = "control-btn";
+  const playIcon = playBtn.querySelector("i") || document.createElement("i");
+  playIcon.className = "material-icons md-dark";
+  if (!playBtn.contains(playIcon)) playBtn.appendChild(playIcon);
+  bindText(playIcon, tab.playIcon);
+  playBtn.onclick = () => sendCommand(tab.id, "playPause");
+  controlsContainer.appendChild(playBtn);
+
+  // Next button
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "control-btn";
+  nextBtn.innerHTML = "<i class=\"material-icons md-dark\">fast_forward</i>";
+  nextBtn.onclick = () => sendCommand(tab.id, "playNext");
+  bindVisible(nextBtn, tab.canNext);
+  controlsContainer.appendChild(nextBtn);
+
+  // Toggle enabled button
+  const toggleBtn = document.createElement("button");
+  toggleBtn.className = "control-btn";
+  toggleBtn.innerHTML = "<i class=\"material-icons md-dark\">not_interested</i>";
+  toggleBtn.onclick = () => {
+    const newEnabled = !tab.enabled.get();
+    tab.enabled.set(newEnabled);
+    chrome.runtime.sendMessage({
+      action: "toggle_enabled",
+      tab_target: tab.id,
+      enabled: newEnabled
+    });
+  };
+  bindClass(toggleBtn, new ComputedObservable(() => !tab.enabled.get(), [tab.enabled]), "active");
+  controlsContainer.appendChild(toggleBtn);
+
+  // Settings panel
+  const settingsPanel = document.createElement("div");
+  settingsPanel.className = "site-settings";
+  bindVisible(settingsPanel, tab.showSettings);
+
+  const settingsLeft = document.createElement("div");
+  settingsLeft.className = "settings-item left";
+
+  const priorityLabel2 = document.createElement("label");
+  priorityLabel2.textContent = "Priority";
+
+  const priorityDown = document.createElement("button");
+  priorityDown.className = "control-btn";
+  priorityDown.innerHTML = "<i class=\"material-icons\">remove_circle</i>";
+  priorityDown.onclick = () => {
+    const current = tab.priority.get();
+    if (current > 1) tab.priority.set(current - 1);
+  };
+  bindAttribute(priorityDown, new ComputedObservable(() => tab.priority.get() <= 1, [tab.priority]), "disabled");
+
+  const priorityDisplay = document.createElement("span");
+  bindText(priorityDisplay, tab.priority);
+
+  const priorityUp = document.createElement("button");
+  priorityUp.className = "control-btn";
+  priorityUp.innerHTML = "<i class=\"material-icons\">add_circle</i>";
+  priorityUp.onclick = () => {
+    const current = tab.priority.get();
+    if (current < 9) tab.priority.set(current + 1);
+  };
+  bindAttribute(priorityUp, new ComputedObservable(() => tab.priority.get() >= 9, [tab.priority]), "disabled");
+
+  settingsLeft.appendChild(priorityLabel2);
+  settingsLeft.appendChild(priorityDown);
+  settingsLeft.appendChild(priorityDisplay);
+  settingsLeft.appendChild(priorityUp);
+
+  const settingsRight = document.createElement("div");
+  settingsRight.className = "settings-item right";
+
+  const optionsBtn = document.createElement("button");
+  optionsBtn.className = "mdl-button mdl-button--raised";
+  optionsBtn.textContent = "Advanced Settings";
+  optionsBtn.onclick = () => window.open(chrome.runtime.getURL("html/options.html"));
+
+  settingsRight.appendChild(optionsBtn);
+  settingsPanel.appendChild(settingsLeft);
+  settingsPanel.appendChild(settingsRight);
+
+  container.appendChild(playerRow);
+  container.appendChild(controlsContainer);
+  container.appendChild(settingsPanel);
+
+  return container;
+}
+
+// Main UI update function (no DOM replacement, only reactive updates)
+function updateMainUI() {
   const player = document.getElementById("player");
 
   // Clear existing content
   player.innerHTML = "";
 
-  // Create shadow root for complete DOM isolation
-  VirtualState.shadowRoot = player.attachShadow({ mode: "open" });
+  const enabledTabs = Array.from(PopupState.tabs.values())
+    .filter(tab => tab.canPlay.get())
+    .sort((a, b) => {
+      const aPriority = a.priority.get();
+      const bPriority = b.priority.get();
+      if (aPriority !== bPriority) return bPriority - aPriority;
 
-  // Copy styles into shadow DOM
-  const style = document.createElement("style");
-  style.textContent = `
-    @import url("https://fonts.googleapis.com/css?family=Roboto:300,400,500,700");
-    @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
-    @import url("https://code.getmdl.io/1.3.0/material.indigo-pink.min.css");
-    @import url("/css/popup.css");
+      const aSiteName = a.siteName.get();
+      const bSiteName = b.siteName.get();
+      if (aSiteName !== bSiteName) return aSiteName.localeCompare(bSiteName);
 
-    :host {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-  `;
+      return a.id - b.id;
+    });
 
-  VirtualState.shadowRoot.appendChild(style);
-
-  console.log("*** SHADOW DOM INITIALIZED ***");
-}
-
-// Update UI by replacing shadow DOM content entirely
-function updateUI() {
-  console.log("*** VIRTUAL DOM UPDATE - SHADOW ISOLATED ***");
-
-  if (!VirtualState.shadowRoot) {
-    console.warn("Shadow DOM not initialized");
+  if (PopupState.isLoading.get()) {
+    const loading = document.createElement("div");
+    loading.className = "no-sites";
+    loading.textContent = "Loading...";
+    player.appendChild(loading);
     return;
   }
 
-  // Create new virtual tree
-  const newVirtualTree = createVirtualTree();
-
-  // Render to shadow DOM (completely isolated)
-  const newElement = renderToShadowDOM(newVirtualTree);
-
-  // Replace content in shadow DOM only
-  const existingContent = VirtualState.shadowRoot.querySelector("#virtual-player");
-  if (existingContent) {
-    VirtualState.shadowRoot.removeChild(existingContent);
+  if (enabledTabs.length === 0 && PopupState.disabledTabs.size === 0) {
+    const noSites = document.createElement("div");
+    noSites.className = "no-sites";
+    noSites.textContent = "No music sites open.";
+    player.appendChild(noSites);
+    return;
   }
 
-  VirtualState.shadowRoot.appendChild(newElement);
+  // Add enabled tabs
+  enabledTabs.forEach(tab => {
+    player.appendChild(createTabElement(tab));
+  });
 
-  // Bind events to shadow DOM elements
-  bindShadowEvents();
+  // Add disabled section if needed
+  if (PopupState.disabledTabs.size > 0) {
+    const toggleBtn = document.createElement("button");
+    toggleBtn.className = "mdl-button mdl-js-button mdl-button--raised mdl-button--colored";
 
-  VirtualState.virtualTree = newVirtualTree;
-}
+    const toggleText = document.createElement("span");
+    const toggleIcon = document.createElement("i");
+    toggleIcon.className = "material-icons";
 
-// Event handling in shadow DOM
-function bindShadowEvents() {
-  const shadowPlayer = VirtualState.shadowRoot.querySelector("#virtual-player");
-  if (!shadowPlayer) return;
+    bindText(toggleText, new ComputedObservable(() =>
+      PopupState.showDisabled.get() ? "Hide Disabled Sites" : "Show Disabled Sites",
+    [PopupState.showDisabled]
+    ));
 
-  // Event delegation on shadow DOM
-  shadowPlayer.addEventListener("click", handleShadowClick);
-}
+    bindText(toggleIcon, new ComputedObservable(() =>
+      PopupState.showDisabled.get() ? "arrow_drop_up" : "arrow_drop_down",
+    [PopupState.showDisabled]
+    ));
 
-function handleShadowClick(e) {
-  e.preventDefault();
+    toggleBtn.onclick = () => PopupState.showDisabled.set(!PopupState.showDisabled.get());
 
-  const action = e.target.closest("[data-action]")?.dataset.action;
-  const tabId = parseInt(e.target.closest("[data-id]")?.dataset.id);
+    toggleBtn.appendChild(toggleText);
+    toggleBtn.appendChild(toggleIcon);
+    player.appendChild(toggleBtn);
 
-  if (!action) return;
+    const disabledContainer = document.createElement("div");
+    disabledContainer.className = "disabled-site-tab-container";
+    bindVisible(disabledContainer, PopupState.showDisabled);
 
-  const tab = VirtualState.tabs.get(tabId) || VirtualState.disabledTabs.get(tabId);
+    Array.from(PopupState.disabledTabs.values()).forEach(tab => {
+      disabledContainer.appendChild(createTabElement(tab));
+    });
 
-  switch (action) {
-  case "settings":
-    if (tab) {
-      tab.showSettings = !tab.showSettings;
-      updateUI();
-    }
-    break;
-
-  case "play":
-    if (tab && tab.enabled) {
-      sendCommand(tabId, "playPause");
-    }
-    break;
-
-  case "next":
-    if (tab && tab.enabled) {
-      sendCommand(tabId, "playNext");
-    }
-    break;
-
-  case "prev":
-    if (tab && tab.enabled) {
-      sendCommand(tabId, "playPrev");
-    }
-    break;
-
-  case "toggle":
-    if (tab) {
-      tab.enabled = !tab.enabled;
-      chrome.runtime.sendMessage({
-        action: "toggle_enabled",
-        tab_target: tabId,
-        enabled: tab.enabled
-      });
-      updateUI();
-    }
-    break;
-
-  case "priority+":
-    if (tab && tab.priority < 9) {
-      tab.priority++;
-      updatePriority(tab);
-    }
-    break;
-
-  case "priority-":
-    if (tab && tab.priority > 1) {
-      tab.priority--;
-      updatePriority(tab);
-    }
-    break;
-
-  case "toggle-disabled":
-    VirtualState.showDisabled = !VirtualState.showDisabled;
-    updateUI();
-    break;
-
-  case "open-tab":
-    chrome.tabs.update(tabId, { active: true });
-    window.close();
-    break;
-
-  case "options":
-    window.open(chrome.runtime.getURL("html/options.html"));
-    break;
+    player.appendChild(disabledContainer);
   }
 }
 
@@ -360,68 +410,31 @@ function sendCommand(tabId, command) {
   });
 }
 
-function updatePriority(tab) {
-  chrome.runtime.sendMessage({
-    action: "update_site_settings",
-    siteKey: tab.siteKey,
-    siteState: { priority: tab.priority }
-  });
-  updateUI();
-}
-
-function createTab(data) {
-  return {
-    id: data.tabId,
-    favicon: data.faviconUrl || "",
-    siteName: data.siteName || "Unknown",
-    siteKey: data.siteKey || "",
-    song: data.song || null,
-    artist: data.artist || null,
-    enabled: data.streamkeysEnabled !== undefined ? data.streamkeysEnabled : true,
-    priority: data.priority || 5,
-    playing: data.isPlaying || false,
-    canPlay: data.canPlayPause || false,
-    canNext: data.canPlayNext || false,
-    canPrev: data.canPlayPrev || false,
-    showSettings: false,
-
-    get songText() {
-      if (!this.song) return "";
-      return this.artist ? `${this.artist} - ${this.song}` : this.song;
-    }
-  };
-}
-
-// Data loading
+// Data loading with tab validation
 function loadInitialData() {
   chrome.runtime.sendMessage({ action: "get_music_tabs" }, (response) => {
     if (!response || (!response.enabled && !response.disabled)) {
-      VirtualState.isLoading = false;
-      updateUI();
+      PopupState.isLoading.set(false);
+      updateMainUI();
       return;
     }
 
     const enabled = response.enabled || [];
     const disabled = response.disabled || [];
 
-    VirtualState.expectedTabs = enabled.length + disabled.length;
-    VirtualState.loadedTabs = 0;
+    PopupState.expectedTabs = enabled.length + disabled.length;
+    PopupState.loadedTabs = 0;
 
     // Load enabled tabs with validation
     enabled.forEach(tab => {
-      // First validate that the tab still exists
       chrome.tabs.get(tab.id, () => {
         if (chrome.runtime.lastError) {
           console.log("Tab", tab.id, "no longer exists, skipping");
-          VirtualState.loadedTabs++;
-          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
-            VirtualState.isLoading = false;
-            updateUI();
-          }
+          PopupState.loadedTabs++;
+          checkLoadingComplete();
           return;
         }
 
-        // Tab exists, now try to get player state
         chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
           if (chrome.runtime.lastError) {
             console.warn("Error getting player state for tab", tab.id, ":", chrome.runtime.lastError.message);
@@ -435,33 +448,25 @@ function loadInitialData() {
               streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
             });
 
-            VirtualState.tabs.set(tab.id, createTab(tabData));
+            PopupState.tabs.set(tab.id, new MusicTab(tabData));
           }
 
-          VirtualState.loadedTabs++;
-          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
-            VirtualState.isLoading = false;
-            updateUI();
-          }
+          PopupState.loadedTabs++;
+          checkLoadingComplete();
         });
       });
     });
 
     // Load disabled tabs with validation
     disabled.forEach(tab => {
-      // First validate that the tab still exists
       chrome.tabs.get(tab.id, () => {
         if (chrome.runtime.lastError) {
           console.log("Disabled tab", tab.id, "no longer exists, skipping");
-          VirtualState.loadedTabs++;
-          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
-            VirtualState.isLoading = false;
-            updateUI();
-          }
+          PopupState.loadedTabs++;
+          checkLoadingComplete();
           return;
         }
 
-        // Tab exists, now try to get player state
         chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
           if (chrome.runtime.lastError) {
             console.warn("Error getting player state for disabled tab", tab.id, ":", chrome.runtime.lastError.message);
@@ -475,27 +480,29 @@ function loadInitialData() {
               streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
             });
 
-            VirtualState.disabledTabs.set(tab.id, createTab(tabData));
+            PopupState.disabledTabs.set(tab.id, new MusicTab(tabData));
           }
 
-          VirtualState.loadedTabs++;
-          if (VirtualState.loadedTabs >= VirtualState.expectedTabs) {
-            VirtualState.isLoading = false;
-            updateUI();
-          }
+          PopupState.loadedTabs++;
+          checkLoadingComplete();
         });
       });
     });
   });
 }
 
+function checkLoadingComplete() {
+  if (PopupState.loadedTabs >= PopupState.expectedTabs) {
+    PopupState.isLoading.set(false);
+    updateMainUI();
+  }
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", function() {
-  console.log("*** INITIALIZING VIRTUAL + SHADOW DOM POPUP ***");
+  console.log("*** INITIALIZING REACTIVE POPUP (NO FLICKER) ***");
 
-  initializeShadowDOM();
-
-  // Bind footer (outside shadow DOM)
+  // Bind footer links
   document.getElementById("options-link").onclick = () => {
     window.open(chrome.runtime.getURL("html/options.html"));
   };
@@ -506,18 +513,18 @@ document.addEventListener("DOMContentLoaded", function() {
     window.open("http://www.streamkeys.com/donate.html");
   };
 
-  // Listen for real-time updates
+  // Listen for real-time updates (no DOM replacement)
   chrome.runtime.onMessage.addListener((request) => {
     if (request.action === "update_popup_state" && request.stateData) {
-      const tab = VirtualState.tabs.get(request.fromTab.id) || VirtualState.disabledTabs.get(request.fromTab.id);
+      const tab = PopupState.tabs.get(request.fromTab.id) || PopupState.disabledTabs.get(request.fromTab.id);
       if (tab) {
-        Object.assign(tab, request.stateData);
-        updateUI();
+        // Update only changed properties (reactive)
+        tab.updateState(request.stateData);
       }
     }
   });
 
   loadInitialData();
 
-  console.log("*** VIRTUAL + SHADOW DOM POPUP INITIALIZED ***");
+  console.log("*** REACTIVE POPUP INITIALIZED - ZERO FLICKER ***");
 });
