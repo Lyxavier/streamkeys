@@ -1,0 +1,23 @@
+.disabled {
+  .site-title,
+  .site-favicon,
+  .site-priority-label,
+  .song-data {
+    opacity: .5;
+    pointer-events: none;
+  }
+
+  .player-controls-button-play,
+  .player-controls-button-prev,
+  .player-controls-button-next,
+  .player-controls-button-like,
+  .player-controls-button-dislike {
+    opacity: .5;
+    pointer-events: none;
+  }
+
+  .player-controls-container {
+    opacity: 1;
+    background-color: #2880c7;
+  }
+}

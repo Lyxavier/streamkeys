@@ -7,7 +7,7 @@
   "icons": {"48": "icon48.png", "128": "icon128.png"},
   "options_page": "html/options.html",
   "background": {
-    "service_worker": "js/background.js"
+    "service_worker": "js/background-mv3.js"
   },
   "action": {
     "default_title": "Streamkeys",

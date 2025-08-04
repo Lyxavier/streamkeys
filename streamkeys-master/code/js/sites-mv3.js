@@ -109,6 +109,11 @@ if (typeof window !== "undefined") {
   window.STREAMKEYS_SITES = STREAMKEYS_SITES;
 }
 
+// Export for service worker context (MV3)
+if (typeof self !== "undefined" && typeof window === "undefined") {
+  self.STREAMKEYS_SITES = STREAMKEYS_SITES;
+}
+
 // Export for CommonJS/Node (used by Browserify)
 if (typeof module !== "undefined" && module.exports) {
   module.exports = STREAMKEYS_SITES;

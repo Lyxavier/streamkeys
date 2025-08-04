@@ -6,8 +6,8 @@
 
 /* eslint-disable no-undef */
 // For now, disable options functionality in MV3
-console.log("Options page loaded - MV3 compatibility mode");
-console.log("Note: Full options functionality requires migration from require.js to native modules");
+// #!# console.log("Options page loaded - MV3 compatibility mode");
+// #!# console.log("Note: Full options functionality requires migration from require.js to native modules");
 
 // Basic fallback for critical functionality
 var OptionsViewModel = function OptionsViewModel() {
@@ -98,6 +98,17 @@ var OptionsViewModel = function OptionsViewModel() {
   };
 
   chrome.runtime.sendMessage({ action: "get_sites" }, function(response) {
+    if (chrome.runtime.lastError) {
+      console.error("Error getting sites:", chrome.runtime.lastError.message);
+      self.sitelistInitialized(true); // Set to true to stop loading even on error
+      return;
+    }
+    if (!response) {
+      console.error("No response received from background script");
+      self.sitelistInitialized(true);
+      return;
+    }
+
     Object.keys(response).forEach(function(key) {
       const siteData = response[key];
 

@@ -20,7 +20,7 @@
   }
 
   YouTubeController.prototype.init = function() {
-    console.log("YouTube Controller initialized and ready for messages");
+    // #!# console.log("YouTube Controller initialized and ready for messages");
 
     // Register controller globally so content script can access it
     window.streamkeysController = this;
@@ -28,7 +28,7 @@
     // Send a ready signal to background (optional)
     chrome.runtime.sendMessage({action: "controller_ready", siteName: this.siteName}, function() {
       if (chrome.runtime.lastError) {
-        console.log("Background not ready yet:", chrome.runtime.lastError.message);
+        // #!# console.log("Background not ready yet:", chrome.runtime.lastError.message);
       }
     });
 
@@ -38,49 +38,95 @@
 
   YouTubeController.prototype.initStateMonitoring = function() {
     var self = this;
+    // #!# console.log("=== Initializing state monitoring ===");
+
     // Send initial state after page loads
     setTimeout(function() {
+      // #!# console.log("=== Sending initial state after 2s delay ===");
       self.getPlayerState();
     }, 2000);
 
-    // Listen for play/pause button clicks
+    // Debounced state update to prevent excessive calls
+    var stateUpdateTimeout;
+    var debounceStateUpdate = function(delay) {
+      if (stateUpdateTimeout) clearTimeout(stateUpdateTimeout);
+      stateUpdateTimeout = setTimeout(function() {
+        // #!# console.log("=== Debounced state update triggered ===");
+        self.getPlayerState();
+      }, delay || 300);
+    };
+
+    // Listen for play/pause button clicks - but debounce to prevent spam
     document.addEventListener("click", function(e) {
       if (e.target.closest(self.selectors.playPause)) {
-        setTimeout(function() {
-          self.getPlayerState();
-        }, 100);
+        // #!# console.log("=== Play/pause button clicked in page, updating state ===");
+        // Only update after a short delay to let YouTube update
+        debounceStateUpdate(500);
       }
     }, { passive: true });
 
     // Listen for navigation changes (when switching videos)
     window.addEventListener("popstate", function() {
-      setTimeout(function() {
-        self.getPlayerState();
-      }, 500);
+      // #!# console.log("=== Page navigation detected, updating state ===");
+      debounceStateUpdate(1000);
     }, { passive: true });
 
-    // Periodic state updates every 3 seconds
+    // Reduced periodic state updates - only every 10 seconds instead of 3
     setInterval(function() {
+      // #!# console.log("=== Periodic state update (10s interval) ===");
       self.getPlayerState();
-    }, 3000);
+    }, 10000);
   };
 
   YouTubeController.prototype.getPlayerState = function() {
-    console.log("YouTube Controller: getPlayerState called");
+    // #!# console.log("YouTube Controller: getPlayerState called");
 
-    // Get current player state - using V2-style detection for better reliability
+    // Get current player state - improved detection for modern YouTube
     var playButton = document.querySelector(this.selectors.playPause);
     var isPlaying = false;
 
     if (playButton) {
-      // Use V2-style state detection: check if playState element exists and is visible
-      var playStateEl = document.querySelector(".ytp-play-button[title^='Pause']");
-      console.log("YouTube Controller: State detection - playButton found:", !!playButton, "playStateEl found:", !!playStateEl);
-      if (playStateEl) {
-        console.log("YouTube Controller: playStateEl title:", playStateEl.getAttribute("title"));
-        console.log("YouTube Controller: playStateEl display:", window.getComputedStyle(playStateEl, null).getPropertyValue("display"));
+      // Method 1: Check the aria-label attribute
+      var ariaLabel = playButton.getAttribute("aria-label");
+      // #!# console.log("YouTube Controller: playButton aria-label:", ariaLabel);
+
+      if (ariaLabel) {
+        isPlaying = ariaLabel.toLowerCase().includes("pause");
       }
-      isPlaying = !!(playStateEl && (window.getComputedStyle(playStateEl, null).getPropertyValue("display") !== "none"));
+
+      // Method 2: Check title attribute as fallback
+      if (!ariaLabel) {
+        var title = playButton.getAttribute("title");
+        // #!# console.log("YouTube Controller: playButton title:", title);
+        if (title) {
+          isPlaying = title.toLowerCase().includes("pause");
+        }
+      }
+
+      // Method 3: Check for play/pause icon classes
+      if (!ariaLabel && !playButton.getAttribute("title")) {
+        var playIcon = playButton.querySelector(".ytp-play-button");
+        if (playIcon) {
+          var style = window.getComputedStyle(playIcon);
+          isPlaying = style.display === "none"; // Play icon hidden means video is playing
+        }
+      }
+
+      // #!# console.log("YouTube Controller: State detection - playButton found:", !!playButton, "isPlaying from button:", isPlaying);
+    }
+
+    // Method 4: Check the actual video element as a more reliable fallback
+    var videoElement = document.querySelector("video");
+    var videoIsPlaying = false;
+    if (videoElement) {
+      videoIsPlaying = !videoElement.paused;
+      // #!# console.log("YouTube Controller: Video element - paused:", videoElement.paused, "isPlaying from video:", videoIsPlaying);
+
+      // If button and video disagree, prefer the video element state
+      if (videoElement && isPlaying !== videoIsPlaying) {
+        // #!# console.log("YouTube Controller: Button and video state mismatch! Using video state:", videoIsPlaying);
+        isPlaying = videoIsPlaying;
+      }
     }
 
     // Get song info - try multiple selectors for better compatibility
@@ -95,7 +141,7 @@
       }
     }
 
-    console.log("YouTube Controller: Found elements - playButton:", !!playButton, "songElement:", !!songElement, "song:", song, "isPlaying:", isPlaying);
+    // #!# console.log("YouTube Controller: Found elements - playButton:", !!playButton, "videoElement:", !!videoElement, "song:", song, "finalIsPlaying:", isPlaying);
 
     var state = {
       siteName: this.siteName,
@@ -109,7 +155,7 @@
       canDislike: !!document.querySelector("#menu ytd-toggle-button-renderer:nth-child(2)")
     };
 
-    console.log("YouTube Controller: Sending state to background:", state);
+    // #!# console.log("YouTube Controller: Sending state to background:", state);
 
     // Send state update to background script
     try {
@@ -119,20 +165,20 @@
       }, function() {
         if (chrome.runtime.lastError) {
           if (chrome.runtime.lastError.message && chrome.runtime.lastError.message.includes("Extension context invalidated")) {
-            console.log("YouTube Controller: Extension was reloaded, stopping controller");
+            // #!# console.log("YouTube Controller: Extension was reloaded, stopping controller");
             return;
           }
-          console.log("YouTube Controller: Error sending state update:", chrome.runtime.lastError.message);
+          // #!# console.log("YouTube Controller: Error sending state update:", chrome.runtime.lastError.message);
         } else {
-          console.log("YouTube Controller: State update sent successfully");
+          // #!# console.log("YouTube Controller: State update sent successfully");
         }
       });
     } catch (error) {
       if (error.message && error.message.includes("Extension context invalidated")) {
-        console.log("YouTube Controller: Extension was reloaded, stopping controller");
+        // #!# console.log("YouTube Controller: Extension was reloaded, stopping controller");
         return;
       }
-      console.log("YouTube Controller: Error in sendMessage:", error);
+      // #!# console.log("YouTube Controller: Error in sendMessage:", error);
     }
 
     return state;
@@ -144,11 +190,66 @@
 
     switch(action) {
     case "playPause":
+      console.log("=== PLAY/PAUSE ACTION STARTED ===");
+
+      // Remember the current state before clicking
+      var stateBefore = this.getPlayerState();
+      var wasPlaying = stateBefore ? stateBefore.isPlaying : false;
+      console.log("=== State before click: isPlaying =", wasPlaying, "===");
+
+      // Click the button
       this.clickElement(this.selectors.playPause);
-      // Wait a bit for YouTube UI to update, then refresh state
+
+      // Send an immediate optimistic state update for faster UI response
       setTimeout(function() {
+        console.log("=== Optimistic state update for UI responsiveness ===");
+        // Send optimistic state (opposite of what it was)
+        var optimisticState = {
+          siteName: self.siteName,
+          song: stateBefore ? stateBefore.song : "",
+          artist: stateBefore ? stateBefore.artist : "",
+          isPlaying: !wasPlaying, // Flip the state optimistically
+          canPlayPause: stateBefore ? stateBefore.canPlayPause : true,
+          canPlayNext: stateBefore ? stateBefore.canPlayNext : false,
+          canPlayPrev: stateBefore ? stateBefore.canPlayPrev : false,
+          canLike: stateBefore ? stateBefore.canLike : false,
+          canDislike: stateBefore ? stateBefore.canDislike : false
+        };
+
+        console.log("=== Sending optimistic state:", optimisticState, "===");
+
+        try {
+          chrome.runtime.sendMessage({
+            action: "update_player_state",
+            stateData: optimisticState
+          }, function() {
+            if (chrome.runtime.lastError) {
+              console.log("YouTube Controller: Error sending optimistic state:", chrome.runtime.lastError.message);
+            } else {
+              console.log("YouTube Controller: Optimistic state sent successfully");
+            }
+          });
+        } catch (error) {
+          console.log("YouTube Controller: Error in optimistic sendMessage:", error);
+        }
+      }, 50);
+
+      // Send multiple delayed state updates to catch when YouTube actually updates
+      setTimeout(function() {
+        console.log("=== State check at 500ms ===");
         self.getPlayerState();
-      }, 200);
+      }, 500);
+
+      setTimeout(function() {
+        console.log("=== State check at 1000ms ===");
+        self.getPlayerState();
+      }, 1000);
+
+      setTimeout(function() {
+        console.log("=== Final state check at 1500ms ===");
+        self.getPlayerState();
+        console.log("=== PLAY/PAUSE ACTION COMPLETED ===");
+      }, 1500);
       break;
     case "playNext":
       this.clickElement(this.selectors.playNext);
@@ -181,13 +282,74 @@
   };
 
   YouTubeController.prototype.clickElement = function(selector) {
+    console.log("=== YouTube Controller Click Attempt ===");
+    console.log("Selector:", selector);
+
+    // Special handling for YouTube play/pause
+    if (selector === ".ytp-play-button") {
+      return this.clickPlayPauseButton();
+    }
+
     var element = document.querySelector(selector);
     if (element) {
-      element.click();
-      console.log("Clicked element:", selector);
+      try {
+        console.log("Found element:", element);
+        element.click();
+        console.log("Standard click executed");
+      } catch (e) {
+        console.log("Standard click failed:", e);
+      }
     } else {
       console.log("Element not found:", selector);
     }
+  };
+
+  YouTubeController.prototype.clickPlayPauseButton = function() {
+    console.log("=== Specialized YouTube Play/Pause Click ===");
+
+    // Method 1: Direct button clicking (most reliable for extensions)
+    try {
+      var button = document.querySelector(".ytp-play-button");
+      if (button) {
+        console.log("Found play button, clicking directly...");
+        button.click();
+        console.log("Direct button click executed");
+        return true;
+      }
+    } catch (e) {
+      console.log("Direct button click failed:", e);
+    }
+
+    // Method 2: Keyboard shortcut as fallback
+    try {
+      console.log("Fallback: Using keyboard shortcut method...");
+
+      // Focus the video player first
+      var player = document.querySelector("#movie_player") || document.querySelector("video");
+      if (player) {
+        player.focus();
+        console.log("Player focused");
+      }
+
+      // Use spacebar - YouTube's primary play/pause shortcut
+      var spaceEvent = new KeyboardEvent("keydown", {
+        key: " ",
+        code: "Space",
+        keyCode: 32,
+        bubbles: true,
+        cancelable: true
+      });
+
+      document.dispatchEvent(spaceEvent);
+      console.log("Spacebar keydown dispatched");
+      return true;
+
+    } catch (e) {
+      console.log("Keyboard shortcut method failed:", e);
+    }
+
+    console.log("All play/pause methods failed");
+    return false;
   };
 
   YouTubeController.prototype.adjustVolume = function(change) {

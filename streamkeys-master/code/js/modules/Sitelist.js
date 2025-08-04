@@ -508,14 +508,20 @@
       chrome.tabs.query({}, function (tabs) {
         tabs.forEach(function (tab) {
           if(that.checkEnabled(tab.url)) {
-            tab.streamkeysSiteKey = that.getSitelistName(tab.url);
-            tab.streamkeysPriority = that.getPriority(tab.streamkeysSiteKey);
+            var siteKey = that.getSitelistName(tab.url);
+            tab.streamkeysSiteKey = siteKey;
+            tab.streamkeysPriority = that.getPriority(siteKey);
             tab.streamkeysEnabled = that.checkTabEnabled(tab.id);
+            // Add proper site name from sitelist
+            tab.siteName = that.sites[siteKey] ? that.sites[siteKey].name : siteKey;
             musicTabs.enabled.push(tab);
           } else if(that.checkMusicSite(tab.url)) {
-            tab.streamkeysSiteKey = that.getSitelistName(tab.url);
-            tab.streamkeysPriority = that.getPriority(tab.streamkeysSiteKey);
+            var disabledSiteKey = that.getSitelistName(tab.url);
+            tab.streamkeysSiteKey = disabledSiteKey;
+            tab.streamkeysPriority = that.getPriority(disabledSiteKey);
             tab.streamkeysEnabled = false;
+            // Add proper site name from sitelist
+            tab.siteName = that.sites[disabledSiteKey] ? that.sites[disabledSiteKey].name : disabledSiteKey;
             musicTabs.disabled.push(tab);
           }
         });

@@ -50,8 +50,31 @@ a:visited {
   border-right: 1px solid #2880c7;
   height: auto;
   min-height: 30px;
+  max-height: 400px; /* Allow up to ~4-5 tabs before scrolling */
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 8px;
   text-align: center;
+  /* Hide scrollbar until content actually overflows */
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+#player::-webkit-scrollbar {
+  width: 6px;
+}
+
+#player::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#player::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+#player::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
 }
 
 .no-sites {
@@ -66,20 +89,21 @@ a:visited {
   overflow: hidden;
 }
 
-.site-controls.disabled {
-  opacity: 0.5;
-}
-
+/* FIXED: Don't grey out the entire blue control bar - only disable individual buttons */
 .site-controls.disabled .player-controls-button-like,
 .site-controls.disabled .player-controls-button-dislike,
 .site-controls.disabled .player-controls-button-play,
 .site-controls.disabled .player-controls-button-prev,
-.site-controls.disabled .player-controls-button-next,
+.site-controls.disabled .player-controls-button-next {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Keep site info and blue bar normal opacity when disabled - only buttons are affected */
 .site-controls.disabled .site-title,
 .site-controls.disabled .site-favicon,
 .site-controls.disabled .song-data {
-  opacity: 0.5;
-  pointer-events: none;
+  opacity: 1;
 }
 
 .player-row {
@@ -98,6 +122,60 @@ a:visited {
   width: 290px;
   -webkit-user-select: none;
   user-select: none;
+}
+
+.site-data {
+  overflow: hidden;
+  height: 22px;
+  margin-bottom: 6px;
+  width: 290px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.site-link {
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: #000000;
+}
+
+.site-link:hover {
+  text-decoration: none;
+  color: #000000;
+}
+
+.site-favicon {
+  border: none;
+  height: 18px;
+  width: 18px;
+  margin-right: 8px;
+}
+
+.site-title {
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.site-priority-label {
+  float: right;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.4;
+  padding-right: 6px;
+  margin-top: 3px;
+}
+
+.site-tab-container {
+  min-height: 60px;
+  overflow: hidden;
+}
+
+/* FIXED: Don't grey out entire tab container */
+.site-tab-container.disabled .site-data,
+.site-tab-container.disabled .song-data {
+  opacity: 0.5;
 }
 
 .site-favicon {
@@ -131,6 +209,37 @@ a:visited {
 
 .song-text {
   display: inline-block;
+}
+
+.player-container {
+  overflow: hidden;
+}
+
+.player-controls-container {
+  background-color: #2880c7;
+  padding: 2px 0;
+  -webkit-user-select: none;
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.song-data {
+  font-size: 15px;
+  height: 20px;
+  margin-bottom: 6px;
+  margin-top: -4px;
+  overflow: hidden;
+  padding: 0 4px 0 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .player-controls {
@@ -169,6 +278,17 @@ a:visited {
 
 .player-controls-button.active {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Settings button specific styling for proper positioning */
+.settings-button {
+  order: -1; /* Move settings button to the left */
+  margin-right: 8px; /* Add space after settings button */
+}
+
+/* Ensure all buttons are properly centered */
+.player-controls-container .player-controls-button {
+  flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 .options-footer {
@@ -385,10 +505,13 @@ a:visited {
   margin-bottom: 0;
 }
 
-.site-tab-container.disabled {
+/* FIXED: Don't grey out the entire container - only specific elements */
+.site-tab-container.disabled .site-data,
+.site-tab-container.disabled .song-data {
   opacity: 0.6;
 }
 
+/* Keep control bar background at full opacity, only dim individual disabled buttons */
 .site-tab-container.disabled .player-controls-button-like,
 .site-tab-container.disabled .player-controls-button-dislike,
 .site-tab-container.disabled .player-controls-button-play,

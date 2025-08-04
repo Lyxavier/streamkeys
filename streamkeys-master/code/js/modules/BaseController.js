@@ -63,7 +63,12 @@
     this.overridePlayNext = options.overridePlayNext || false;
 
     chrome.runtime.sendMessage({ created: true }, function() {
-      sk_log("SK content script loaded");
+      if (chrome.runtime.lastError) {
+        // Extension context invalidated - normal during service worker restart
+        sk_log("Background script unavailable during initialization: " + chrome.runtime.lastError.message);
+      } else {
+        sk_log("SK content script loaded");
+      }
     });
   }
 
@@ -205,12 +210,24 @@
         chrome.runtime.sendMessage({
           action: "send_change_notification",
           stateData: newState
+        }, function() {
+          if (chrome.runtime.lastError) {
+            // Extension context invalidated or background script unavailable
+            // This is normal when the service worker restarts - no action needed
+            sk_log("Background script unavailable for notification: " + chrome.runtime.lastError.message);
+          }
         });
       }
       this.oldState = newState;
       chrome.runtime.sendMessage({
         action: "update_player_state",
         stateData: newState
+      }, function() {
+        if (chrome.runtime.lastError) {
+          // Extension context invalidated or background script unavailable
+          // This is normal when the service worker restarts - no action needed
+          sk_log("Background script unavailable for state update: " + chrome.runtime.lastError.message);
+        }
       });
     }
   };
@@ -296,6 +313,11 @@
         chrome.runtime.sendMessage({
           action: "send_change_notification",
           stateData: this.getStateData()
+        }, function() {
+          if (chrome.runtime.lastError) {
+            // Extension context invalidated - normal during service worker restart
+            sk_log("Background script unavailable for notification: " + chrome.runtime.lastError.message);
+          }
         });
       }
       if(request.action === "getPlayerState") {
