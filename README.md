@@ -1,10 +1,16 @@
-# Streamkeys v1.8.4 [![Build Status](https://travis-ci.org/berrberr/streamkeys.svg?branch=master)](https://travis-ci.org/berrberr/streamkeys)
+# Streamkeys v1.8.5[![Version](https://img.shields.io/github/package-json/v/Lyxavier/streamkeys/V3-Manifest)](https://github.com/Lyxavier/streamkeys)
 
 Chrome extension to send "global" (ie. across the browser) hotkeys to various online media players.
 
-It is available on the Chrome Store:
+# Fork Notice:
 
-https://chrome.google.com/webstore/detail/streamkeys/ekpipjofdicppbepocohdlgenahaneen?hl=en
+This is a fork of the original V2 Manifest Version 1.8.4 by Alex Gabriel/berrberr before it got took over and them removed from the google play store.
+
+Disclaimer: was edited with Claude Sonnet 4 to be able to get this working.
+
+I have spend many hours debugging and testing this to work, There are some sites that I have not tested this on.
+
+I mainly used it as a youtube media controller, If there's enough want for certain sites that have errors or don't work, let me know.
 
 ## Installation
 
