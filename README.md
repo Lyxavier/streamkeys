@@ -6,6 +6,8 @@ Chrome extension to send "global" (ie. across the browser) hotkeys to various on
 
 This is a fork of the original V2 Manifest Version 1.8.4 by Alex Gabriel/berrberr before it got took over and then removed from the google play store.
 
+The now 1.8.6 version was explicitly build upon the 1.8.4 version for this reason.
+
 Disclaimer: was edited with Claude Sonnet 4 to be able to get this working.
 
 I have spend many hours debugging and testing this to work, There are some sites that I have not tested this on.
