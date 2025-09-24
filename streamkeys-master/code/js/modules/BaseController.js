@@ -54,6 +54,9 @@
     // Default listener sends actions to main document
     this.attachListeners();
 
+    // Expose controller globally for content script verification (MV3 requirement)
+    window.streamkeysController = this;
+
     // Set to true if the tab should be hidden from the popup unless it has a playPause element shown
     this.hidePlayer = options.hidePlayer || false;
 

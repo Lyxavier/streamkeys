@@ -93,9 +93,18 @@
 
         // Define helper functions at function body root to avoid ESLint no-inner-declarations
         function waitAndInject(controllerPath) {
+          // FIXED: Increased delay and added better readiness check
           setTimeout(function() {
-            injectController(controllerPath);
-          }, 500); // Give background script time to initialize
+            // Check if background script is ready before injecting
+            chrome.runtime.sendMessage({ action: "ping" }, function() {
+              if (chrome.runtime.lastError) {
+                console.log("Streamkeys: Background not ready, waiting longer...");
+                setTimeout(() => injectController(controllerPath), 2000);
+              } else {
+                injectController(controllerPath);
+              }
+            });
+          }, 1000); // Increased from 500ms to 1000ms
         }
 
         function injectController(controllerPath, retryCount) {

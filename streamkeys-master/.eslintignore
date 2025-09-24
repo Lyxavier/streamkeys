@@ -1,0 +1,6 @@
+# Ignore third-party libraries
+code/js/material.min.js
+
+# Ignore node_modules and build directories
+node_modules/
+build/

@@ -1,4 +1,17 @@
 /* Streamkeys MV3 Popup - V2 Compatible Material Design Styling */
+@import "../../node_modules/material-design-lite/material.min";
+
+/* Material Icons font for MV3 - replaces Google Fonts CDN */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/MaterialIcons-Regular.woff2') format('woff2'),
+       url('../fonts/MaterialIcons-Regular.woff') format('woff');
+}
+
+$black: #000000;
+
 $black: #000000;
 $popup-width: 290px;
 $color-primary: #2880c7;
@@ -26,122 +39,139 @@ a:visited {
   color: $black;
 }
 
-// Material Design button base styles
-.mdl-button {
-  background: transparent;
-  border: none;
-  border-radius: 2px;
-  color: rgb(68, 68, 68);
-  position: relative;
-  height: 36px;
-  margin: 0;
-  min-width: 64px;
-  padding: 0 16px;
-  display: inline-block;
-  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
-  line-height: 1;
-  letter-spacing: 0;
+// Hides all the bootstrap outlines
+.btn {
+  &:focus,
+  &:active:focus,
+  &.active:focus {
+    outline: none !important;
+  }
+}
+
+.player-div-border {
+  border-left: 1px solid $color-primary;
+  border-right: 1px solid $color-primary;
+}
+
+.disabled {
+  .player-controls-button-like,
+  .player-controls-button-dislike,
+  .player-controls-button-play,
+  .player-controls-button-prev,
+  .player-controls-button-next,
+  .site-title,
+  .site-favicon,
+  .song-data {
+    opacity: .5;
+    pointer-events: none;
+  }
+}
+
+.song-data {
+  font-size: 15px;
+  height: 20px;
+  margin-bottom: 6px;
+  margin-top: -4px;
   overflow: hidden;
-  will-change: box-shadow;
-  transition: box-shadow 0.2s cubic-bezier(0.4, 0, 1, 1), 
-              background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
-              color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  outline: none;
-  cursor: pointer;
-  text-decoration: none;
-  text-align: center;
-  line-height: 36px;
-  vertical-align: middle;
-}
-
-.mdl-button::-moz-focus-inner {
-  border: 0;
-}
-
-.mdl-button:hover {
-  background-color: rgba(158, 158, 158, 0.20);
-}
-
-.mdl-button:focus:not(:active) {
-  background-color: rgba(0, 0, 0, 0.12);
-}
-
-.mdl-button:active {
-  background-color: rgba(158, 158, 158, 0.40);
-}
-
-.mdl-button.mdl-button--colored {
-  color: $color-primary;
-}
-
-.mdl-button.mdl-button--colored:focus:not(:active) {
-  background-color: rgba(0, 0, 0, 0.12);
-}
-
-.mdl-button--raised {
-  background: rgba(158, 158, 158, 0.20);
-  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 
-              0 3px 1px -2px rgba(0, 0, 0, 0.2), 
-              0 1px 5px 0 rgba(0, 0, 0, 0.12);
-}
-
-.mdl-button--raised.mdl-button--colored {
-  background: $color-primary;
-  color: $white;
-}
-
-.mdl-button--icon {
-  border-radius: 50%;
-  font-size: 24px;
-  height: 32px;
-  margin-left: 0;
-  margin-right: 0;
-  min-width: 32px;
-  width: 32px;
-  padding: 0;
-  overflow: hidden;
-  color: inherit;
-  line-height: normal;
-}
-
-.mdl-button--icon .material-icons {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-12px, -12px);
-  line-height: 24px;
-  width: 24px;
-}
-
-.mdl-button--disabled {
-  color: rgba(0, 0, 0, 0.26) !important;
-  cursor: default !important;
-  background-color: transparent !important;
-}
-
-.material-icons {
-  font-family: 'Material Icons';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
+  padding: 0 4px 0 4px;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+
+  .song-text {
+    display: inline-block;
+  }
 }
 
-.material-icons.md-dark { 
-  color: rgba(255, 255, 255, 1); 
+.site-data {
+  overflow: hidden;
+  height: 22px;
+  margin-bottom: 6px;
+  width: $popup-width;
+  -webkit-user-select: none;
+  user-select: none;
+
+  .site-link {
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    text-decoration: none;
+    flex: 1;
+  }
+
+  .settings {
+    float: right;
+    font-size: 12px;
+    margin: 3px 6px 0 0;
+    opacity: .5;
+    width: 12px;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  .settings-active {
+    opacity: 1;
+  }
+}
+
+.site-favicon {
+  border: none;
+  float: left;
+  height: 16px;
+  margin: 3px 6px 0 6px;
+  width: 16px;
+}
+
+.site-title {
+  font-size: 14px;
+  font-weight: bold;
+  float: left;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 200px;
+  white-space: nowrap;
+}
+
+.site-tab-container {
+  border-bottom: 1px solid #eaeaea;
+  height: 22px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  background-color: transparent;
+  margin: 0;
+  padding: 6px 0 6px 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.site-link {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+}
+
+.site-link:hover {
+  text-decoration: underline;
+}
+
+.site-priority-label {
+  float: right;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 3px 6px 0 0;
+  opacity: .6;
+}
+
+.marquee {
+  overflow: hidden;
 }
 
 .header {
@@ -205,9 +235,10 @@ a:visited {
 }
 
 .site-link {
-  margin-left: 6px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
+  justify-content: center;
   color: inherit;
   text-decoration: none;
   flex: 1;
@@ -291,56 +322,32 @@ a:visited {
 }
 
 .player-controls-container {
-  background-color: $controls-background-color;
+  background-color: $color-primary;
   padding: 2px 0;
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  align-items: center;
   -webkit-user-select: none;
   user-select: none;
-}
 
-.player-controls-button {
-  background: none !important;
-  border: none;
-  color: white !important;
-  padding: 0;
-  margin: 0 2px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
+  .player-controls-button {
+    margin-left: 2px;
+    margin-right: 2px;
+    min-width: 32px !important; // Override MDL min-width to fit 5 buttons in 290px
+    padding: 0 8px !important; // Reduce padding to fit better
 
-.player-controls-button:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
+    &.mdl-button--disabled {
+      opacity: .7;
+    }
 
-.player-controls-button.active {
-  background-color: rgba(255, 255, 255, 0.2) !important;
-}
+    &.player-controls-button-like,
+    &.player-controls-button-dislike {
+      i {
+        font-size: 18px;
+      }
+    }
+  }
 
-// Individual button disabled state (when button functionality not available)
-.player-controls-button.mdl-button--disabled,
-.player-controls-button.disabled {
-  opacity: 0.3 !important;
-  cursor: default !important;
-  pointer-events: none !important;
-}
-
-.player-controls-button i.material-icons {
-  color: white;
-  font-size: 20px;
-  -webkit-font-smoothing: antialiased; /* Fix pixelated icons */
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  i {
+    color: $white;
+  }
 }
 
 #btn-disabled-sites {
@@ -414,13 +421,31 @@ a:visited {
   height: 44px;
   padding: 0;
   background: white;
-  gap: 10px;
+  gap: 12px; // Add space between buttons
 
   #options-link,
   #help-link,
   #donate-link {
     margin: 0;
     flex-shrink: 0;
+    min-width: 70px; // Ensure consistent button width
+    height: 32px;
+    line-height: 32px;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+}
+
+// Fix for enable/disable toggle button - remove focus outline/box
+.player-controls-button {
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  &:focus:not(:active) {
+    background-color: transparent !important;
   }
 }
 
@@ -457,4 +482,8 @@ a:visited {
   .player-controls-button:not(.player-controls-button-play):not(.player-controls-button-prev):not(.player-controls-button-next):not(.player-controls-button-like):not(.player-controls-button-dislike) {
     opacity: 1 !important;
   }
+}
+
+.mdl-button--colored {
+  background-color: $color-primary !important;
 }

@@ -4,5 +4,8 @@
 			"path": ".."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.agent.maxRequests": 100,
+		"files.autoSave": "afterDelay"
+	}
 }

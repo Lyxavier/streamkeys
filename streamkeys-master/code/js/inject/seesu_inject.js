@@ -1,6 +1,17 @@
 "use strict";
 (function() {
-  var sk_log = require("../modules/SKLog.js");
+  // Inline SKLog functionality for MV3 compatibility
+  function sk_log(msg, obj, err) {
+    if(msg) {
+      obj = obj || "";
+      if(err) {
+        console.error("STREAMKEYS-ERROR: " + msg, obj);
+      } else {
+        console.log("STREAMKEYS-INFO: " + msg, obj);
+      }
+    }
+  }
+
   document.addEventListener("streamkeys-cmd", function(e) {
     //Get seesu current song object (thanks Gleb!)
     var song = window.su.p && window.su.p.c_song;

@@ -162,6 +162,12 @@ a {
 
 #general {
   margin-bottom: 80px;
+  
+  .mdl-button {
+    display: block;
+    margin: 20px auto;
+    text-align: center;
+  }
 }
 
 .main-container {

@@ -1,9 +1,33 @@
 "use strict";
 (function() {
-  var sk_log = require("../modules/SKLog.js");
+  // Inline SKLog functionality for MV3 compatibility
+  function sk_log(msg, obj, err) {
+    if(msg) {
+      obj = obj || "";
+      if(err) {
+        console.error("STREAMKEYS-ERROR: " + msg, obj);
+      } else {
+        console.log("STREAMKEYS-INFO: " + msg, obj);
+      }
+    }
+  }
+
+  // Vanilla JS helper for jQuery methods
+  function addStateElement() {
+    if (typeof $ !== "undefined") {
+      $("body").append("<div id='sk-state' class='sk-play'>");
+    } else {
+      // Vanilla JS fallback
+      const stateDiv = document.createElement("div");
+      stateDiv.id = "sk-state";
+      stateDiv.className = "sk-play";
+      document.body.appendChild(stateDiv);
+    }
+  }
+
   if (typeof window.jwplayer === "function") {
     // Make the play state available in the DOM
-    $("body").append("<div id='sk-state' class='sk-play'>");
+    addStateElement();
 
     var onPlayPauseRegistered = false;
 
@@ -16,10 +40,18 @@
       // Register onPlay and onPause callbacks to toggle state
       if (!onPlayPauseRegistered) {
         jw.onPlay(function() {
-          $("#sk-state").removeClass("sk-pause").addClass("sk-play");
+          const stateEl = document.getElementById("sk-state");
+          if (stateEl) {
+            stateEl.classList.remove("sk-pause");
+            stateEl.classList.add("sk-play");
+          }
         });
         jw.onPause(function() {
-          $("#sk-state").removeClass("sk-play").addClass("sk-pause");
+          const stateEl = document.getElementById("sk-state");
+          if (stateEl) {
+            stateEl.classList.remove("sk-play");
+            stateEl.classList.add("sk-pause");
+          }
         });
       }
       onPlayPauseRegistered = true;

@@ -1,6 +1,10 @@
 "use strict";
 
-// #!# console.log("*** REACTIVE UI - NO FLICKER APPROACH ***");
+/* eslint-disable no-unused-vars */
+
+// console.log("*** REACTIVE UI - NO FLICKER APPROACH ***");
+
+// console.log("*** REACTIVE UI - NO FLICKER APPROACH ***");
 
 // Lightweight reactive system (inspired by MV2's Knockout observables)
 class Observable {
@@ -59,6 +63,7 @@ class MusicTab {
     this.id = data.tabId;
     this.favicon = new Observable(data.faviconUrl || "");
     this.siteName = new Observable(data.siteName || "Unknown");
+    this.url = new Observable(data.url || "");
     this.siteKey = data.siteKey || "";
     this.song = new Observable(data.song || null);
     this.artist = new Observable(data.artist || null);
@@ -70,8 +75,6 @@ class MusicTab {
     this.canPlay = new Observable(data.canPlayPause !== undefined ? data.canPlayPause : true);
     this.canNext = new Observable(data.canPlayNext !== undefined ? data.canPlayNext : true);
     this.canPrev = new Observable(data.canPlayPrev !== undefined ? data.canPlayPrev : true);
-    this.canLike = new Observable(data.canLike || false);
-    this.canDislike = new Observable(data.canDislike || false);
     this.showSettings = new Observable(false);
 
     // Computed observables
@@ -84,8 +87,8 @@ class MusicTab {
 
     this.playIcon = new ComputedObservable(() => {
       const isPlaying = this.playing.get();
-      const icon = isPlaying ? "pause" : "play_arrow";
-      // #!# console.log(`Tab ${this.id} playIcon computed: isPlaying=${isPlaying}, icon=${icon}`);
+      const icon = isPlaying ? "pause_arrow" : "play_arrow";
+      // #!# // console.log(`Tab ${this.id} playIcon computed: isPlaying=${isPlaying}, icon=${icon}`);
       return icon;
     }, [this.playing]);
 
@@ -98,16 +101,16 @@ class MusicTab {
       });
     });
 
-    // #!# console.log(`Created MusicTab ${this.id} with improved button defaults:`, {
-    // #!#   canPlay: this.canPlay.get(),
-    // #!#   canNext: this.canNext.get(),
-    // #!#   canPrev: this.canPrev.get(),
-    // #!#   playing: this.playing.get()
-    // #!# });
+    // console.log(`Created MusicTab ${this.id} with improved button defaults:`, {
+    //   canPlay: this.canPlay.get(),
+    //   canNext: this.canNext.get(),
+    //   canPrev: this.canPrev.get(),
+    //   playing: this.playing.get()
+    // });
   }
 
   updateState(stateData) {
-    // #!# console.log("updateState called for tab", this.id, "with data:", stateData);
+    // console.log("updateState called for tab", this.id, "with data:", stateData);
 
     // Store previous states for comparison (used in debug logging)
     const prevPlaying = this.playing.get(); // eslint-disable-line no-unused-vars
@@ -119,7 +122,7 @@ class MusicTab {
     if (stateData.song !== undefined) this.song.set(stateData.song);
     if (stateData.artist !== undefined) this.artist.set(stateData.artist);
     if (stateData.isPlaying !== undefined) {
-      // #!# console.log("Setting playing state to:", stateData.isPlaying, "for tab", this.id);
+      // #!# // console.log("Setting playing state to:", stateData.isPlaying, "for tab", this.id);
       this.playing.set(stateData.isPlaying);
     }
 
@@ -145,11 +148,8 @@ class MusicTab {
       this.canPrev.set(true);
     }
 
-    if (stateData.canLike !== undefined) this.canLike.set(stateData.canLike);
-    if (stateData.canDislike !== undefined) this.canDislike.set(stateData.canDislike);
-
     // Log state changes for debugging
-    // #!# console.log("Tab", this.id, "state changes:", {
+    // #!# // console.log("Tab", this.id, "state changes:", {
     // #!#   playing: `${prevPlaying} -> ${this.playing.get()}`,
     // #!#   canPlay: `${prevCanPlay} -> ${this.canPlay.get()}`,
     // #!#   canNext: `${prevCanNext} -> ${this.canNext.get()}`,
@@ -204,7 +204,7 @@ const PopupState = {
   tabs: new ObservableMap(),
   disabledTabs: new ObservableMap(),
   isLoading: new Observable(false), // Start as false, never show loading unless we have no content
-  showDisabled: new Observable(false),
+  sortByPriority: new Observable(false), // New option for sorting preference (default: native tab order)
   expectedTabs: 0,
   loadedTabs: 0,
   hasShownInitialContent: false
@@ -212,21 +212,28 @@ const PopupState = {
 
 // DOM binding utilities (similar to Knockout's data-bind)
 function bindElement(element, observable, updateFn) {
-  // #!# console.log("bindElement called with:", element, "observable value:", observable.get());
+  // #!# // console.log("bindElement called with:", element, "observable value:", observable.get());
   // Initial update
   updateFn(observable.get());
 
   // Subscribe to changes
   return observable.subscribe((newValue) => {
-    // #!# console.log("bindElement observable changed to:", newValue, "for element:", element);
+    // #!# // console.log("bindElement observable changed to:", newValue, "for element:", element);
     updateFn(newValue);
   });
 }
 
 function bindText(element, observable) {
   return bindElement(element, observable, (value) => {
-    // #!# console.log("bindText updating element with value:", value, "element:", element);
+    // #!# // console.log("bindText updating element with value:", value, "element:", element);
     element.textContent = value || "";
+  });
+}
+
+function bindMaterialIcon(element, observable) {
+  return bindElement(element, observable, (iconName) => {
+    // Simple MV2-style approach: just set the icon name as text
+    element.textContent = iconName || "";
   });
 }
 
@@ -265,13 +272,13 @@ function createTabElement(tab) {
   const playerRow = document.createElement("div");
   playerRow.className = "player-row player-container";
 
-  // Site data (matches MV2 structure)
+  // Site data (matches MV2 structure) - FIXED: Use correct MV2 class name
   const siteData = document.createElement("div");
   siteData.className = "site-data";
 
   const priorityLabel = document.createElement("span");
   priorityLabel.className = "site-priority-label";
-  bindText(priorityLabel, tab.priority);
+  priorityLabel.style.display = "none"; // Hide priority number completely
 
   const siteLink = document.createElement("a");
   siteLink.href = "#";
@@ -340,9 +347,12 @@ function createTabElement(tab) {
 
         const marqueeElement = songText.querySelector(".song-text-marquee");
         if (marqueeElement) {
-          // Calculate animation duration based on text length for consistent speed
-          const textLength = content.length;
-          const duration = Math.max(8, textLength * 0.1); // Minimum 8s, adjust based on length
+          // FIXED: Calculate animation duration for CONSISTENT SPEED like MV2 marquee
+          // Use pixels per second for consistent visual speed regardless of text length
+          const pixelsPerSecond = 50; // Adjust for desired scroll speed
+          const textPixelWidth = marqueeElement.scrollWidth || textWidth;
+          const totalDistance = textPixelWidth + containerWidth; // From 100% right to 100% left
+          const duration = Math.max(4, totalDistance / pixelsPerSecond); // Minimum 4s duration
 
           marqueeElement.style.animationDuration = `${duration}s`;
 
@@ -401,34 +411,26 @@ function createTabElement(tab) {
   const controlsContainer = document.createElement("div");
   controlsContainer.className = "player-controls-container player-container";
 
-  // Settings button (MV2-style) - FIXED: Proper centering
+  // Settings button (MV2-style) - FIXED: Add icon class like MV2
   const settingsBtn = document.createElement("button");
   settingsBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button settings-button";
-  settingsBtn.innerHTML = "<i class=\"material-icons md-dark\">more_vert</i>";
+  settingsBtn.innerHTML = "<i class=\"material-icons md-dark icon-more-vert\">more_vert</i>";
   settingsBtn.onclick = () => {
     tab.showSettings.set(!tab.showSettings.get());
   };
   controlsContainer.appendChild(settingsBtn);
 
-  // Dislike button (MV2-style) - COMMENTED OUT per user request
-  // const dislikeBtn = document.createElement("button");
-  // dislikeBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button player-controls-button-dislike";
-  // dislikeBtn.innerHTML = "<i class=\"material-icons md-dark\">thumb_down</i>";
-  // dislikeBtn.onclick = () => sendCommand(tab.id, "dislike");
-  // bindClass(dislikeBtn, new ComputedObservable(() => {
-  //   const canDislike = tab.canDislike.get();
-  //   const enabled = tab.enabled.get();
-  //   const shouldDisable = !canDislike || !enabled;
-  //   return shouldDisable;
-  // }, [tab.canDislike, tab.enabled]), "mdl-button--disabled");
-  // controlsContainer.appendChild(dislikeBtn);
+  // Initialize MDL for the settings button
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(settingsBtn);
+  }
 
   // Previous button (MV2-style) with FIXED property bindings
   const prevBtn = document.createElement("button");
   prevBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button player-controls-button-prev";
-  prevBtn.innerHTML = "<i class=\"material-icons md-dark\">fast_rewind</i>";
+  prevBtn.innerHTML = "<i class=\"material-icons md-dark icon-fast-rewind\">fast_rewind</i>";
   prevBtn.onclick = () => {
-    // #!# console.log("Previous button clicked for tab", tab.id);
+    // #!# // console.log("Previous button clicked for tab", tab.id);
     sendCommand(tab.id, "playPrev");
   };
 
@@ -437,53 +439,80 @@ function createTabElement(tab) {
     const canPrev = tab.canPrev.get();
     const enabled = tab.enabled.get();
     const shouldDisable = !canPrev || !enabled;
-    // #!# console.log(`Tab ${tab.id} prev button: canPrev=${canPrev}, enabled=${enabled}, shouldDisable=${shouldDisable}`);
+    // #!# // console.log(`Tab ${tab.id} prev button: canPrev=${canPrev}, enabled=${enabled}, shouldDisable=${shouldDisable}`);
     return shouldDisable;
   }, [tab.canPrev, tab.enabled]), "mdl-button--disabled");
   controlsContainer.appendChild(prevBtn);
+
+  // Initialize MDL for the previous button
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(prevBtn);
+  }
 
   // Play/pause button (MV2-style) with FIXED property bindings
   const playBtn = document.createElement("button");
   playBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button player-controls-button-play";
   const playIcon = document.createElement("i");
   playIcon.className = "material-icons md-dark";
-  bindText(playIcon, tab.playIcon);
+  bindMaterialIcon(playIcon, tab.playIcon);
   playBtn.appendChild(playIcon);
   playBtn.onclick = () => {
-    // #!# console.log("Play/pause button clicked for tab", tab.id, "current playing state:", tab.playing.get());
+    const isEnabled = tab.enabled.get();
+    const isPlaying = tab.playing.get();
+
+    // For disabled sites: only allow pausing if currently playing, never allow starting playback
+    if (!isEnabled && !isPlaying) {
+      // #!# // console.log("Blocked site is not playing - preventing play action for tab", tab.id);
+      return; // Don't send play command to disabled site that's not playing
+    }
+
+    // #!# // console.log("Play/pause button clicked for tab", tab.id, "current playing state:", isPlaying, "enabled:", isEnabled);
+
+    // FIXED: Remove optimistic UI update to prevent multiple toggles
     sendCommand(tab.id, "playPause");
 
-    // Optimistically toggle the state for immediate UI feedback
-    const currentState = tab.playing.get();
-    tab.playing.set(!currentState);
-
-    // Then refresh the actual state after a brief delay to get the real state
+    // Refresh the actual state after a brief delay to get the real state
     setTimeout(() => {
       chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
         if (!chrome.runtime.lastError && state && state.isPlaying !== undefined) {
-          // #!# console.log("Refreshing play state after command, got:", state.isPlaying);
+          // #!# // console.log("Refreshing play state after command, got:", state.isPlaying);
           tab.playing.set(state.isPlaying);
         }
       });
-    }, 100);
+    }, 150);
   };
 
-  // FIXED: Use correct property names and ensure initial state is set
+  // MODIFIED: Updated play button disabled logic for blocked sites
   bindClass(playBtn, new ComputedObservable(() => {
     const canPlay = tab.canPlay.get();
     const enabled = tab.enabled.get();
+    const isPlaying = tab.playing.get();
+
+    // For disabled sites: only disable if not playing (allow pause, prevent play)
+    if (!enabled) {
+      const shouldDisable = !canPlay || !isPlaying; // Allow clicking when playing (to pause)
+      // #!# // console.log(`Tab ${tab.id} play button (disabled site): canPlay=${canPlay}, enabled=${enabled}, isPlaying=${isPlaying}, shouldDisable=${shouldDisable}`);
+      return shouldDisable;
+    }
+
+    // For enabled sites: original logic
     const shouldDisable = !canPlay || !enabled;
-    // #!# console.log(`Tab ${tab.id} play button: canPlay=${canPlay}, enabled=${enabled}, shouldDisable=${shouldDisable}`);
+    // #!# // console.log(`Tab ${tab.id} play button (enabled site): canPlay=${canPlay}, enabled=${enabled}, shouldDisable=${shouldDisable}`);
     return shouldDisable;
-  }, [tab.canPlay, tab.enabled]), "mdl-button--disabled");
+  }, [tab.canPlay, tab.enabled, tab.playing]), "mdl-button--disabled");
   controlsContainer.appendChild(playBtn);
+
+  // Initialize MDL for the play button
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(playBtn);
+  }
 
   // Next button (MV2-style) with FIXED property bindings
   const nextBtn = document.createElement("button");
   nextBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button player-controls-button-next";
-  nextBtn.innerHTML = "<i class=\"material-icons md-dark\">fast_forward</i>";
+  nextBtn.innerHTML = "<i class=\"material-icons md-dark icon-fast-forward\">fast_forward</i>";
   nextBtn.onclick = () => {
-    // #!# console.log("Next button clicked for tab", tab.id);
+    // #!# // console.log("Next button clicked for tab", tab.id);
     sendCommand(tab.id, "playNext");
   };
 
@@ -492,39 +521,43 @@ function createTabElement(tab) {
     const canNext = tab.canNext.get();
     const enabled = tab.enabled.get();
     const shouldDisable = !canNext || !enabled;
-    // #!# console.log(`Tab ${tab.id} next button: canNext=${canNext}, enabled=${enabled}, shouldDisable=${shouldDisable}`);
+    // #!# // console.log(`Tab ${tab.id} next button: canNext=${canNext}, enabled=${enabled}, shouldDisable=${shouldDisable}`);
     return shouldDisable;
   }, [tab.canNext, tab.enabled]), "mdl-button--disabled");
   controlsContainer.appendChild(nextBtn);
 
-  // Like button (MV2-style) - COMMENTED OUT per user request
-  // const likeBtn = document.createElement("button");
-  // likeBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button player-controls-button-like";
-  // likeBtn.innerHTML = "<i class=\"material-icons md-dark\">thumb_up</i>";
-  // likeBtn.onclick = () => sendCommand(tab.id, "like");
-  // bindClass(likeBtn, new ComputedObservable(() => {
-  //   const canLike = tab.canLike.get();
-  //   const enabled = tab.enabled.get();
-  //   const shouldDisable = !canLike || !enabled;
-  //   return shouldDisable;
-  // }, [tab.canLike, tab.enabled]), "mdl-button--disabled");
-  // controlsContainer.appendChild(likeBtn);
+  // Initialize MDL for the next button
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(nextBtn);
+  }
 
-  // Toggle enabled button (MV2-style)
+  // Toggle enabled button (MV2-style) - FIXED: Add icon class like MV2
   const toggleBtn = document.createElement("button");
-  toggleBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button";
-  toggleBtn.innerHTML = "<i class=\"material-icons md-dark\">not_interested</i>";
+  toggleBtn.className = "mdl-button mdl-js-button mdl-button--icon player-controls-button player-controls-button-toggle";
+  toggleBtn.innerHTML = "<i class=\"material-icons md-dark icon-not-interested\">not_interested</i>";
   toggleBtn.onclick = () => {
     const newEnabled = !tab.enabled.get();
     tab.enabled.set(newEnabled);
+
+    // FIXED: Don't move tabs between collections - keep all tabs in main collection
+    // Just update the enabled state - the reactive UI will handle the visual changes
+    // This prevents tabs from "disappearing" when disabled
+
     chrome.runtime.sendMessage({
       action: "toggle_enabled",
       tab_target: tab.id,
       enabled: newEnabled
     });
+
+    // No need to call updateMainUI() - reactive updates handle this automatically
   };
   bindClass(toggleBtn, new ComputedObservable(() => !tab.enabled.get(), [tab.enabled]), "active");
   controlsContainer.appendChild(toggleBtn);
+
+  // Initialize MDL for the toggle button
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(toggleBtn);
+  }
 
   // Settings panel (MV2-style structure)
   const settingsPanel = document.createElement("div");
@@ -540,7 +573,7 @@ function createTabElement(tab) {
 
   const priorityDown = document.createElement("button");
   priorityDown.className = "mdl-button mdl-js-button mdl-button--icon priority-button";
-  priorityDown.innerHTML = "<i class=\"material-icons\">remove_circle</i>";
+  priorityDown.innerHTML = "<i class=\"material-icons icon-remove-circle\">remove_circle</i>";
   priorityDown.onclick = () => {
     const current = tab.priority.get();
     if (current > 1) tab.priority.set(current - 1);
@@ -553,7 +586,7 @@ function createTabElement(tab) {
 
   const priorityUp = document.createElement("button");
   priorityUp.className = "mdl-button mdl-js-button mdl-button--icon priority-button";
-  priorityUp.innerHTML = "<i class=\"material-icons\">add_circle</i>";
+  priorityUp.innerHTML = "<i class=\"material-icons icon-add-circle\">add_circle</i>";
   priorityUp.onclick = () => {
     const current = tab.priority.get();
     if (current < 9) tab.priority.set(current + 1);
@@ -565,6 +598,12 @@ function createTabElement(tab) {
   settingsLeft.appendChild(priorityDisplay);
   settingsLeft.appendChild(priorityUp);
 
+  // Initialize MDL for the priority buttons
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(priorityDown);
+    componentHandler.upgradeElement(priorityUp);
+  }
+
   const settingsRight = document.createElement("div");
   settingsRight.className = "settings-item right";
 
@@ -575,6 +614,11 @@ function createTabElement(tab) {
   optionsBtn.onclick = () => window.open(chrome.runtime.getURL("html/options.html"));
 
   settingsRight.appendChild(optionsBtn);
+
+  // Initialize MDL for the options button
+  if (typeof componentHandler !== "undefined") {
+    componentHandler.upgradeElement(optionsBtn);
+  }
   settingsPanel.appendChild(settingsLeft);
   settingsPanel.appendChild(settingsRight);
 
@@ -589,23 +633,55 @@ function createTabElement(tab) {
 function updateMainUI() {
   const player = document.getElementById("player");
 
-  // Don't clear content - reactive updates only
-  const enabledTabs = Array.from(PopupState.tabs.values())
-    .filter(tab => tab.canPlay.get())
+  // FIXED: Show ALL tabs (enabled and disabled) in main view
+  // Get all tabs from both collections
+  const disabledTabsArray = PopupState.disabledTabs ? Array.from(PopupState.disabledTabs.values()) : [];
+  const allTabs = [...Array.from(PopupState.tabs.values()), ...disabledTabsArray];
+
+  // console.log(`updateMainUI: Processing ${allTabs.length} total tabs (${PopupState.tabs.size} enabled, ${disabledTabsArray.length} disabled)`);
+
+  // Filter and sort all tabs together
+  const displayTabs = allTabs
+    .filter(tab => {
+      // Safety check - ensure tab is a MusicTab instance with observables
+      if (!tab || !tab.url || !tab.siteName || typeof tab.url.get !== "function") {
+        // console.warn("Skipping invalid tab object:", {
+        //   hasTab: !!tab,
+        //   hasUrl: !!(tab && tab.url),
+        //   hasSiteName: !!(tab && tab.siteName),
+        //   hasUrlGet: !!(tab && tab.url && typeof tab.url.get === "function"),
+        //   tabId: tab && tab.id,
+        //   tabKeys: tab ? Object.keys(tab) : "no tab"
+        // });
+        return false;
+      }
+      const hasUrl = tab.url.get();
+      const hasSiteName = tab.siteName.get();
+      // console.log(`Tab ${tab.id}: url="${hasUrl}", siteName="${hasSiteName}"`);
+      return hasUrl && hasSiteName; // Only show valid tabs with URL/siteName
+    })
     .sort((a, b) => {
-      const aPriority = a.priority.get();
-      const bPriority = b.priority.get();
-      if (aPriority !== bPriority) return bPriority - aPriority;
+      if (PopupState.sortByPriority.get()) {
+        // Priority-based sorting (MV3 enhancement)
+        const aPriority = a.priority.get();
+        const bPriority = b.priority.get();
+        if (aPriority !== bPriority) return bPriority - aPriority;
 
-      const aSiteName = a.siteName.get();
-      const bSiteName = b.siteName.get();
-      if (aSiteName !== bSiteName) return aSiteName.localeCompare(bSiteName);
+        const aSiteName = a.siteName.get();
+        const bSiteName = b.siteName.get();
+        if (aSiteName !== bSiteName) return aSiteName.localeCompare(bSiteName);
 
-      return a.id - b.id;
+        return a.id - b.id;
+      } else {
+        // Native tab order (MV2 behavior) - just by tab ID
+        return a.id - b.id;
+      }
     });
 
+  // console.log(`updateMainUI: After filtering, ${displayTabs.length} tabs will be displayed`);
+
   // Never show loading - always show content immediately
-  const hasAnyContent = PopupState.tabs.size() > 0 || PopupState.disabledTabs.size() > 0;
+  const hasAnyContent = PopupState.tabs.size() > 0 || (PopupState.disabledTabs && PopupState.disabledTabs.size() > 0);
 
   // Mark that we've shown initial content
   if (hasAnyContent) {
@@ -619,7 +695,7 @@ function updateMainUI() {
   }
 
   // Show empty state only when NOT loading and no tabs exist
-  if (enabledTabs.length === 0 && PopupState.disabledTabs.size() === 0 && !PopupState.isLoading.get()) {
+  if (displayTabs.length === 0 && !PopupState.isLoading.get()) {
     if (!player.querySelector(".no-sites-empty")) {
       // Don't clear if we have other content
       if (!player.hasChildNodes() || player.children.length === 0) {
@@ -639,54 +715,40 @@ function updateMainUI() {
     emptyElement.remove();
   }
 
-  // Create or update tab elements (reactive approach)
-  updateTabElements(enabledTabs, false);
-  updateDisabledSection();
+  // SIMPLIFIED: Always show all tabs in main view (both enabled and disabled)
+  // Remove any old containers from the separation approach
+  const enabledContainer = player.querySelector(".enabled-tabs-container");
+  const disabledContainer = player.querySelector(".disabled-tabs-container");
+  if (enabledContainer) enabledContainer.remove();
+  if (disabledContainer) disabledContainer.remove();
+
+  // Display all tabs in main area - disabled tabs will be visually distinguished by CSS
+  updateTabElements(displayTabs);
 }
 
 // Create tab elements only once, then use reactive updates
-function updateTabElements(tabs, isDisabled) {
+function updateTabElements(tabs) {
   const player = document.getElementById("player");
-  const containerClass = isDisabled ? "disabled-site-tab-container" : "enabled-tabs-container";
 
-  let container = player.querySelector(`.${containerClass}`);
-  if (!container && tabs.length > 0) {
-    container = document.createElement("div");
-    container.className = containerClass;
-    if (isDisabled) {
-      // Add "initialize" class for MV2 compatibility
-      container.classList.add("initialize");
-      // Insert disabled container after enabled tabs and toggle button
-      const toggleBtn = player.querySelector("#btn-disabled-sites");
-      if (toggleBtn) {
-        toggleBtn.insertAdjacentElement("afterend", container);
-      } else {
-        player.appendChild(container);
-      }
-    } else {
-      // Insert enabled container at the beginning
-      player.insertBefore(container, player.firstChild);
-    }
-  }
+  // SIMPLIFIED: No containers needed - add tabs directly to player
+  // Remove any old containers
+  const enabledContainer = player.querySelector(".enabled-tabs-container");
+  const disabledContainer = player.querySelector(".disabled-tabs-container");
+  if (enabledContainer) enabledContainer.remove();
+  if (disabledContainer) disabledContainer.remove();
 
-  if (!container) return;
-
-  // Add/update tab elements
+  // Add/update tab elements directly in player
   tabs.forEach(tab => {
-    let existingElement = container.querySelector(`[data-tab-id="${tab.id}"]`);
+    let existingElement = player.querySelector(`[data-tab-id="${tab.id}"]`);
     if (!existingElement) {
       existingElement = createTabElement(tab);
-      // Add "disabled-site" class for disabled tabs (MV2 style)
-      if (isDisabled) {
-        existingElement.classList.add("disabled-site");
-      }
-      container.appendChild(existingElement);
+      player.appendChild(existingElement);
     }
     // Reactive updates happen automatically via observables
   });
 
   // Remove tabs that no longer exist
-  const existingElements = container.querySelectorAll("[data-tab-id]");
+  const existingElements = player.querySelectorAll("[data-tab-id]");
   existingElements.forEach(element => {
     const tabId = parseInt(element.dataset.tabId);
     const stillExists = tabs.some(tab => tab.id === tabId);
@@ -694,85 +756,30 @@ function updateTabElements(tabs, isDisabled) {
       element.remove();
     }
   });
-
-  // Remove container if empty
-  if (container.children.length === 0) {
-    container.remove();
-  }
-}
-
-function updateDisabledSection() {
-  const player = document.getElementById("player");
-  const disabledTabs = Array.from(PopupState.disabledTabs.values());
-
-  if (disabledTabs.length > 0) {
-    // Create toggle button if it doesn't exist (MV2-style)
-    let toggleBtn = player.querySelector(".toggle-disabled-btn");
-    if (!toggleBtn) {
-      toggleBtn = document.createElement("button");
-      toggleBtn.id = "btn-disabled-sites";
-      toggleBtn.className = "mdl-button mdl-js-button mdl-button--raised mdl-button--colored";
-
-      const toggleText = document.createElement("span");
-      const toggleIcon = document.createElement("i");
-      toggleIcon.className = "material-icons";
-
-      bindText(toggleText, new ComputedObservable(() =>
-        PopupState.showDisabled.get() ? "Hide Disabled Sites" : "Show Disabled Sites",
-      [PopupState.showDisabled]
-      ));
-
-      bindText(toggleIcon, new ComputedObservable(() =>
-        PopupState.showDisabled.get() ? "arrow_drop_up" : "arrow_drop_down",
-      [PopupState.showDisabled]
-      ));
-
-      toggleBtn.onclick = () => PopupState.showDisabled.set(!PopupState.showDisabled.get());
-
-      toggleBtn.appendChild(toggleText);
-      toggleBtn.appendChild(toggleIcon);
-      player.appendChild(toggleBtn);
-    }
-
-    // Update disabled tabs container
-    updateTabElements(disabledTabs, true);
-
-    // Bind visibility to the container
-    const disabledContainer = player.querySelector(".disabled-site-tab-container");
-    if (disabledContainer) {
-      bindVisible(disabledContainer, PopupState.showDisabled);
-    }
-  } else {
-    // Remove disabled section if no disabled tabs
-    const toggleBtn = player.querySelector("#btn-disabled-sites");
-    const disabledContainer = player.querySelector(".disabled-site-tab-container");
-    if (toggleBtn) toggleBtn.remove();
-    if (disabledContainer) disabledContainer.remove();
-  }
 }
 
 // Dynamic tab creation/update (MV2-style approach)
 function updatePopupState(stateData, fromTab) {
   if (!stateData || !fromTab) {
-    // #!# console.warn("updatePopupState called with invalid data:", { stateData, fromTab });
+    // #!# // console.warn("updatePopupState called with invalid data:", { stateData, fromTab });
     return;
   }
 
   // Look for existing tab in both enabled and disabled collections
-  let musicTab = PopupState.tabs.get(fromTab.id) || PopupState.disabledTabs.get(fromTab.id);
+  let musicTab = PopupState.tabs.get(fromTab.id) || (PopupState.disabledTabs && PopupState.disabledTabs.get(fromTab.id));
 
   if (musicTab) {
     // Update existing tab's observables (reactive updates)
     musicTab.updateState(stateData);
-    // #!# console.log("Updated existing tab", fromTab.id, "with state:", stateData);
+    // console.log("Updated existing tab", fromTab.id, "with state:", stateData);
   } else {
     // CREATE NEW TAB DYNAMICALLY (like MV2 did)
-    // #!# console.log("Creating new dynamic tab", fromTab.id, "with state:", stateData);
+    // console.log("Creating new dynamic tab", fromTab.id, "with state:", stateData);
 
     // First validate the tab still exists
     chrome.tabs.get(fromTab.id, () => {
       if (chrome.runtime.lastError) {
-        // #!# console.log("Tab", fromTab.id, "no longer exists during dynamic creation, skipping");
+        // console.log("Tab", fromTab.id, "no longer exists during dynamic creation, skipping");
         return;
       }
 
@@ -782,6 +789,7 @@ function updatePopupState(stateData, fromTab) {
 
       const tabData = Object.assign({}, stateData, {
         tabId: fromTab.id,
+        url: fromTab.url || "",
         faviconUrl: fromTab.favIconUrl,
         siteName: siteName,
         siteKey: fromTab.streamkeysSiteKey,
@@ -791,19 +799,15 @@ function updatePopupState(stateData, fromTab) {
 
       const newTab = new MusicTab(tabData);
 
-      // Add to appropriate collection based on enabled state
-      if (newTab.enabled.get()) {
-        PopupState.tabs.set(fromTab.id, newTab);
-        // #!# console.log("Added new enabled tab", fromTab.id, "to tabs collection");
-      } else {
-        PopupState.disabledTabs.set(fromTab.id, newTab);
-        // #!# console.log("Added new disabled tab", fromTab.id, "to disabled collection");
-      }
+      // FIXED: Always add tabs to main collection regardless of enabled state
+      // The reactive UI will handle disabled styling automatically
+      PopupState.tabs.set(fromTab.id, newTab);
 
       // Set up priority sync for this new tab (like MV2 did)
       newTab.priority.subscribe((newPriority) => {
         // Sync priority across tabs with same siteKey
-        const allTabs = [...PopupState.tabs.values(), ...PopupState.disabledTabs.values()];
+        const disabledTabsArray = PopupState.disabledTabs ? Array.from(PopupState.disabledTabs.values()) : [];
+        const allTabs = [...PopupState.tabs.values(), ...disabledTabsArray];
         allTabs.forEach(tab => {
           if (tab.siteKey === newTab.siteKey && tab.id !== newTab.id && tab.priority.get() !== newPriority) {
             tab.priority.set(newPriority);
@@ -820,14 +824,13 @@ function updatePopupState(stateData, fromTab) {
 // Tab cleanup for closed tabs (MV2-style)
 function cleanupClosedTabs() {
   // Check if any tabs in our collections no longer exist
-  const allTabIds = [...PopupState.tabs._map.keys(), ...PopupState.disabledTabs._map.keys()];
+  const allTabIds = [...PopupState.tabs._map.keys()];
   allTabIds.forEach(tabId => {
     chrome.tabs.get(tabId, () => {
       if (chrome.runtime.lastError) {
         // Tab no longer exists, remove from collections
-        // #!# console.log("Removing closed tab", tabId, "from popup state");
+        // console.log("Removing closed tab", tabId, "from popup state");
         PopupState.tabs.delete(tabId);
-        PopupState.disabledTabs.delete(tabId);
       }
     });
   });
@@ -844,21 +847,22 @@ function sendCommand(tabId, command) {
 
 // Refresh current state for all active tabs (ensures UI is in sync)
 function refreshCurrentStates() {
-  // #!# console.log("Refreshing current states for all active tabs");
+  // console.log("Refreshing current states for all active tabs");
 
-  const allTabs = [...PopupState.tabs.values(), ...PopupState.disabledTabs.values()];
+  const disabledTabsArray = PopupState.disabledTabs ? Array.from(PopupState.disabledTabs.values()) : [];
+  const allTabs = [...PopupState.tabs.values(), ...disabledTabsArray];
 
   allTabs.forEach(tab => {
     // Poll current state from each tab multiple times to ensure accuracy
     const refreshTab = () => {
       chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
         if (chrome.runtime.lastError) {
-          // #!# console.log(`Could not refresh state for tab ${tab.id}:`, chrome.runtime.lastError.message);
+          // #!# // console.log(`Could not refresh state for tab ${tab.id}:`, chrome.runtime.lastError.message);
           return;
         }
 
         if (state) {
-          // #!# console.log(`Refreshed state for tab ${tab.id}:`, state);
+          // #!# // console.log(`Refreshed state for tab ${tab.id}:`, state);
           tab.updateState(state);
         }
       });
@@ -871,197 +875,341 @@ function refreshCurrentStates() {
   });
 }
 
-// Data loading with tab validation
+// Enhanced data loading with MV2-style cached states
 function loadInitialData() {
   // NEVER show loading immediately - we want instant response
-  // #!# console.log("Loading initial data - no loading state will be shown");
+  // console.log("Loading initial data - no loading state will be shown");
 
-  chrome.runtime.sendMessage({ action: "get_music_tabs" }, (response) => {
-    // Check for chrome.runtime.lastError
-    if (chrome.runtime.lastError) {
-      // #!# console.warn("Error getting music tabs:", chrome.runtime.lastError.message);
-      // Show empty state instead of error
-      PopupState.isLoading.set(false);
+  // ENHANCED: First try to get cached states from background for immediate UI
+  chrome.runtime.sendMessage({ action: "get_cached_states" }, (cachedResponse) => {
+    let cachedStates = {};
+    if (cachedResponse && cachedResponse.tabStates) {
+      cachedStates = cachedResponse.tabStates;
+      // console.log("Got cached states for", Object.keys(cachedStates).length, "tabs");
+    }
+
+    chrome.runtime.sendMessage({ action: "get_music_tabs" }, (response) => {
+      // Check for chrome.runtime.lastError
+      if (chrome.runtime.lastError) {
+        // console.warn("Error getting music tabs:", chrome.runtime.lastError.message);
+        // Show empty state instead of error
+        PopupState.isLoading.set(false);
+        PopupState.hasShownInitialContent = true;
+        updateMainUI();
+
+        // Try again after a brief delay in case it was a temporary service worker restart
+        setTimeout(() => {
+          // console.log("Retrying music tabs request after error...");
+          loadInitialData();
+        }, 1000);
+        return;
+      }
+
+      // console.log("Popup received music tabs response:", response);
+
+      if (!response || (!response.enabled && !response.disabled)) {
+        // No tabs to load, don't show loading (like MV2)
+        PopupState.isLoading.set(false);
+        updateMainUI();
+        return;
+      }
+
+      const enabled = response.enabled || [];
+      const disabled = response.disabled || [];
+
+      // console.log(`Popup loading: ${enabled.length} enabled tabs, ${disabled.length} disabled tabs`);
+
+      PopupState.expectedTabs = enabled.length + disabled.length;
+      PopupState.loadedTabs = 0;
+
+      // console.log(`Expected tabs: ${PopupState.expectedTabs} (enabled: ${enabled.length})`);
+
+      // NEVER show loading if we already have content or no tabs to load
+      if (PopupState.expectedTabs === 0) {
+        // console.log("No tabs to load, completing immediately");
+        PopupState.hasShownInitialContent = true;
+        checkLoadingComplete();
+        return;
+      }
+
+      // Process tabs immediately without any loading state
+      // console.log("Processing tabs without loading indicator");
       PopupState.hasShownInitialContent = true;
-      updateMainUI();
 
-      // Try again after a brief delay in case it was a temporary service worker restart
-      setTimeout(() => {
-        // #!# console.log("Retrying music tabs request after error...");
-        loadInitialData();
-      }, 1000);
-      return;
-    }
-
-    if (!response || (!response.enabled && !response.disabled)) {
-      // No tabs to load, don't show loading (like MV2)
-      PopupState.isLoading.set(false);
-      updateMainUI();
-      return;
-    }
-
-    const enabled = response.enabled || [];
-    const disabled = response.disabled || [];
-
-    PopupState.expectedTabs = enabled.length + disabled.length;
-    PopupState.loadedTabs = 0;
-
-    // #!# console.log(`Expected tabs: ${PopupState.expectedTabs} (enabled: ${enabled.length}, disabled: ${disabled.length})`);
-
-    // NEVER show loading if we already have content or no tabs to load
-    if (PopupState.expectedTabs === 0) {
-      // #!# console.log("No tabs to load, completing immediately");
-      PopupState.hasShownInitialContent = true;
-      checkLoadingComplete();
-      return;
-    }
-
-    // Process tabs immediately without any loading state
-    // #!# console.log("Processing tabs without loading indicator");
-    PopupState.hasShownInitialContent = true;
-
-    // Load enabled tabs with validation
-    enabled.forEach(tab => {
-      chrome.tabs.get(tab.id, () => {
-        if (chrome.runtime.lastError) {
-          // #!# console.log("Tab", tab.id, "no longer exists, skipping");
-          PopupState.loadedTabs++;
-          checkLoadingComplete();
-          return;
-        }
-
-        // Add a timeout for tab connections to prevent hanging
-        let connectionHandled = false;
-        const connectionTimeout = setTimeout(() => {
-          if (!connectionHandled) {
-            console.warn("Connection timeout for tab", tab.id, "- tab may not have controller loaded yet");
-            connectionHandled = true;
+      // Load enabled tabs with validation and cached state support
+      enabled.forEach(tab => {
+        chrome.tabs.get(tab.id, () => {
+          if (chrome.runtime.lastError) {
+            // console.log("Tab", tab.id, "no longer exists, skipping");
             PopupState.loadedTabs++;
             checkLoadingComplete();
+            return;
           }
-        }, 3000); // 3 second timeout
 
-        chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
-          if (!connectionHandled) {
-            clearTimeout(connectionTimeout);
-            connectionHandled = true;
+          // ENHANCED: Check for cached state first for immediate display
+          let initialState = null;
+          if (cachedStates[tab.id] && cachedStates[tab.id].state) {
+            initialState = cachedStates[tab.id].state;
+            // console.log("Using cached state for tab", tab.id, ":", initialState);
+          }
 
-            if (chrome.runtime.lastError) {
-              // More specific error handling - reduce console noise for normal cases
-              const error = chrome.runtime.lastError.message;
-              if (error.includes("Could not establish connection")) {
-                // #!# console.log("Tab", tab.id, "- content script not loaded, skipping (not a music site or controller failed)");
-              } else if (error.includes("message port closed")) {
-                // #!# console.log("Tab", tab.id, "- tab closed or navigated away");
-              } else {
-                console.warn("Unexpected error getting player state for tab", tab.id, ":", error);
-              }
+          // ALWAYS create a MusicTab object for tabs returned by service worker
+          // Service worker already validated these are music sites
+          const siteName = tab.siteName || (initialState && initialState.siteName) || tab.streamkeysSiteKey || "Unknown Site";
+          const tabData = {
+            tabId: tab.id,
+            url: tab.url || "",
+            faviconUrl: tab.favIconUrl,
+            siteName: siteName,
+            siteKey: tab.streamkeysSiteKey,
+            priority: tab.streamkeysPriority || 5,
+            streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true,
+            // Use cached state if available, otherwise defaults
+            ...(initialState || {
+              song: "Loading...",
+              artist: "",
+              isPlaying: false,
+              canPlayPause: false,
+              canPrevious: false,
+              canNext: false
+            })
+          };
+          // console.log(`Creating MusicTab for ${tab.id} with siteName: ${siteName}`);
+          PopupState.tabs.set(tab.id, new MusicTab(tabData));
 
-              // DO NOT create default tabs for connection errors - only background script should identify music sites
+          // Now get live state to update the cached data
+          // Add a timeout for tab connections to prevent hanging
+          let connectionHandled = false;
+          const connectionTimeout = setTimeout(() => {
+            if (!connectionHandled) {
+              // console.warn("Connection timeout for tab", tab.id, "- tab may not have controller loaded yet");
+              connectionHandled = true;
               PopupState.loadedTabs++;
               checkLoadingComplete();
-              return;
-            } else if (state) {
-              // Use proper fallback for siteName
-              const siteName = tab.siteName || state.siteName || tab.streamkeysSiteKey || "Unknown Site";
-
-              const tabData = Object.assign({}, state, {
-                tabId: tab.id,
-                faviconUrl: tab.favIconUrl,
-                siteName: siteName,
-                siteKey: tab.streamkeysSiteKey,
-                priority: tab.streamkeysPriority || 5,
-                streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
-              });
-
-              PopupState.tabs.set(tab.id, new MusicTab(tabData));
-
-              // FIXED: More aggressive immediate state refreshes with shorter delays
-              const refreshTab = () => {
-                chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
-                  if (!chrome.runtime.lastError && state) {
-                    const musicTab = PopupState.tabs.get(tab.id);
-                    if (musicTab) {
-                      // #!# console.log("Immediate refresh for tab", tab.id, "with state:", state);
-                      musicTab.updateState(state);
-                    }
-                  }
-                });
-              };
-
-              // Multiple quick refreshes to catch controller state
-              setTimeout(refreshTab, 10);   // Very fast first refresh
-              setTimeout(refreshTab, 50);   // Second refresh
-              setTimeout(refreshTab, 150);  // Third refresh to catch delayed updates
-            } else {
-              // #!# console.log("No state returned for tab", tab.id, "- controller may not be ready");
             }
+          }, 3000); // 3 second timeout
 
-            PopupState.loadedTabs++;
-            checkLoadingComplete();
-          }
+          chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+            if (!connectionHandled) {
+              clearTimeout(connectionTimeout);
+              connectionHandled = true;
+
+              if (chrome.runtime.lastError) {
+                // More specific error handling - reduce console noise for normal cases
+                const error = chrome.runtime.lastError.message;
+                if (error.includes("Could not establish connection")) {
+                  // #!# // console.log("Tab", tab.id, "- content script not loaded, skipping (not a music site or controller failed)");
+                } else if (error.includes("message port closed")) {
+                  // #!# // console.log("Tab", tab.id, "- tab closed or navigated away");
+                } else {
+                  // console.warn("Unexpected error getting player state for tab", tab.id, ":", error);
+                }
+
+                // DO NOT create default tabs for connection errors - only background script should identify music sites
+                PopupState.loadedTabs++;
+                checkLoadingComplete();
+                return;
+              } else if (state) {
+                // Update the tab we just created with live state
+                let existingTab = PopupState.tabs.get(tab.id);
+                if (existingTab) {
+                  // console.log(`Updating tab ${tab.id} with live state:`, state);
+                  existingTab.updateState(state);
+                } else {
+                  // console.warn(`Tab ${tab.id} responded but no MusicTab found - this should not happen`);
+                }
+
+                // FIXED: More aggressive immediate state refreshes with shorter delays
+                const musicTab = PopupState.tabs.get(tab.id);
+                if (musicTab) {
+                  const refreshTab = () => {
+                    chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+                      if (!chrome.runtime.lastError && state) {
+                        musicTab.updateState(state);
+                      }
+                    });
+                  };
+
+                  // Multiple quick refreshes to catch controller state
+                  setTimeout(refreshTab, 10);   // Very fast first refresh
+                  setTimeout(refreshTab, 50);   // Second refresh
+                  setTimeout(refreshTab, 150);  // Third refresh to catch delayed updates
+                }
+              } else {
+                // console.log("No state returned for tab", tab.id, "- controller may not be ready");
+              }
+
+              PopupState.loadedTabs++;
+              checkLoadingComplete();
+            }
+          });
         });
       });
-    });
 
-    // Load disabled tabs with validation
-    disabled.forEach(tab => {
-      chrome.tabs.get(tab.id, () => {
-        if (chrome.runtime.lastError) {
-          // #!# console.log("Disabled tab", tab.id, "no longer exists, skipping");
-          PopupState.loadedTabs++;
-          checkLoadingComplete();
-          return;
-        }
-
-        // Add a timeout for tab connections to prevent hanging
-        let connectionHandled = false;
-        const connectionTimeout = setTimeout(() => {
-          if (!connectionHandled) {
-            console.warn("Connection timeout for disabled tab", tab.id, "- tab may not have controller loaded yet");
-            connectionHandled = true;
+      // Load disabled tabs with validation
+      disabled.forEach(tab => {
+        chrome.tabs.get(tab.id, () => {
+          if (chrome.runtime.lastError) {
+          // #!# // console.log("Disabled tab", tab.id, "no longer exists, skipping");
             PopupState.loadedTabs++;
             checkLoadingComplete();
+            return;
           }
-        }, 3000); // 3 second timeout
 
-        chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
-          if (!connectionHandled) {
-            clearTimeout(connectionTimeout);
-            connectionHandled = true;
+          // Add a timeout for tab connections to prevent hanging
+          let connectionHandled = false;
+          const connectionTimeout = setTimeout(() => {
+            if (!connectionHandled) {
+              // console.warn("Connection timeout for disabled tab", tab.id, "- tab may not have controller loaded yet");
+              connectionHandled = true;
+              PopupState.loadedTabs++;
+              checkLoadingComplete();
+            }
+          }, 3000); // 3 second timeout
 
+          chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+            if (!connectionHandled) {
+              clearTimeout(connectionTimeout);
+              connectionHandled = true;
+
+              if (chrome.runtime.lastError) {
+                // More specific error handling - reduce console noise for normal cases
+                const error = chrome.runtime.lastError.message;
+                if (error.includes("Could not establish connection")) {
+                  // #!# // console.log("Tab", tab.id, "- content script not loaded, skipping (not a music site or controller failed)");
+                } else if (error.includes("message port closed")) {
+                  // #!# // console.log("Tab", tab.id, "- tab closed or navigated away");
+                } else {
+                  // console.warn("Unexpected error getting player state for tab", tab.id, ":", error);
+                }
+
+                // DO NOT create default tabs for connection errors - only background script should identify music sites
+                PopupState.loadedTabs++;
+                checkLoadingComplete();
+                return;
+              } else if (state) {
+                // Update existing tab if we had cached state, or create new tab
+                let existingTab = PopupState.tabs.get(tab.id);
+                if (existingTab) {
+                  existingTab.updateState(state);
+                } else {
+                  // Use proper fallback for siteName
+                  const siteName = tab.siteName || state.siteName || tab.streamkeysSiteKey || "Unknown Site";
+
+                  const tabData = Object.assign({}, state, {
+                    tabId: tab.id,
+                    url: tab.url || "",
+                    faviconUrl: tab.favIconUrl,
+                    siteName: siteName,
+                    siteKey: tab.streamkeysSiteKey,
+                    priority: tab.streamkeysPriority || 5,
+                    streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
+                  });
+
+                  PopupState.tabs.set(tab.id, new MusicTab(tabData));
+                }
+
+                // FIXED: More aggressive immediate state refreshes with shorter delays
+                const refreshTab = () => {
+                  chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
+                    if (!chrome.runtime.lastError && state) {
+                      const musicTab = PopupState.tabs.get(tab.id);
+                      if (musicTab) {
+                        // #!# // console.log("Immediate refresh for tab", tab.id, "with state:", state);
+                        musicTab.updateState(state);
+                      }
+                    }
+                  });
+                };
+
+                // Multiple quick refreshes to catch controller state
+                setTimeout(refreshTab, 10);   // Very fast first refresh
+                setTimeout(refreshTab, 50);   // Second refresh
+                setTimeout(refreshTab, 150);  // Third refresh to catch delayed updates
+              } else {
+                // #!# // console.log("No state returned for tab", tab.id, "- controller may not be ready");
+              }
+
+              PopupState.loadedTabs++;
+              checkLoadingComplete();
+            }
+          });
+        });
+      });
+
+      // Load disabled tabs with similar caching support
+      disabled.forEach(tab => {
+        chrome.tabs.get(tab.id, () => {
+          if (chrome.runtime.lastError) {
+            PopupState.loadedTabs++;
+            checkLoadingComplete();
+            return;
+          }
+
+          // Check for cached state for disabled tabs too
+          let initialState = null;
+          if (cachedStates[tab.id] && cachedStates[tab.id].state) {
+            initialState = cachedStates[tab.id].state;
+            const siteName = tab.siteName || initialState.siteName || tab.streamkeysSiteKey || "Unknown Site";
+            const tabData = Object.assign({}, initialState, {
+              tabId: tab.id,
+              url: tab.url || "",
+              faviconUrl: tab.favIconUrl,
+              siteName: siteName,
+              siteKey: tab.streamkeysSiteKey,
+              priority: tab.streamkeysPriority || 5,
+              streamkeysEnabled: false // Mark as disabled
+            });
+
+            // FIXED: Put disabled tabs in main collection too
+            PopupState.tabs.set(tab.id, new MusicTab(tabData));
+          }
+
+          chrome.tabs.sendMessage(tab.id, { action: "getPlayerState" }, (state) => {
             if (chrome.runtime.lastError) {
               // More specific error handling - reduce console noise for normal cases
               const error = chrome.runtime.lastError.message;
               if (error.includes("Could not establish connection")) {
-                // #!# console.log("Disabled tab", tab.id, "- content script not loaded (expected for non-music sites)");
+                // #!# // console.log("Disabled tab", tab.id, "- content script not loaded (expected for non-music sites)");
               } else if (error.includes("message port closed")) {
-                // #!# console.log("Disabled tab", tab.id, "- tab closed or navigated away");
+                // #!# // console.log("Disabled tab", tab.id, "- tab closed or navigated away");
               } else {
-                console.warn("Unexpected error getting player state for disabled tab", tab.id, ":", error);
+                // console.warn("Unexpected error getting player state for disabled tab", tab.id, ":", error);
               }
               // Don't create tab element for failed connections
             } else if (state) {
-              // Use proper fallback for siteName
-              const siteName = tab.siteName || state.siteName || tab.streamkeysSiteKey || "Unknown Site";
+              // Update existing or create new disabled tab
+              let existingTab = PopupState.tabs.get(tab.id); // Check main collection first
+              if (!existingTab && PopupState.disabledTabs) {
+                existingTab = PopupState.disabledTabs.get(tab.id);
+              }
 
-              const tabData = Object.assign({}, state, {
-                tabId: tab.id,
-                faviconUrl: tab.favIconUrl,
-                siteName: siteName,
-                siteKey: tab.streamkeysSiteKey,
-                priority: tab.streamkeysPriority || 5,
-                streamkeysEnabled: tab.streamkeysEnabled !== undefined ? tab.streamkeysEnabled : true
-              });
+              if (existingTab) {
+                existingTab.updateState(state);
+              } else {
+                // Use proper fallback for siteName
+                const siteName = tab.siteName || state.siteName || tab.streamkeysSiteKey || "Unknown Site";
 
-              PopupState.disabledTabs.set(tab.id, new MusicTab(tabData));
+                const tabData = Object.assign({}, state, {
+                  tabId: tab.id,
+                  url: tab.url || "",
+                  faviconUrl: tab.favIconUrl,
+                  siteName: siteName,
+                  siteKey: tab.streamkeysSiteKey,
+                  priority: tab.streamkeysPriority || 5,
+                  streamkeysEnabled: false // Mark as disabled
+                });
+
+                // FIXED: Put all tabs in main collection
+                PopupState.tabs.set(tab.id, new MusicTab(tabData));
+              }
             } else {
-              // #!# console.log("No state returned for disabled tab", tab.id, "- controller may not be ready");
+              // #!# // console.log("No state returned for disabled tab", tab.id, "- controller may not be ready");
             }
 
             PopupState.loadedTabs++;
             checkLoadingComplete();
-          }
+          });
         });
       });
     });
@@ -1069,10 +1217,10 @@ function loadInitialData() {
 }
 
 function checkLoadingComplete() {
-  // #!# console.log(`Loading check: ${PopupState.loadedTabs}/${PopupState.expectedTabs} tabs loaded`);
+  // #!# // console.log(`Loading check: ${PopupState.loadedTabs}/${PopupState.expectedTabs} tabs loaded`);
   // Only stop loading when we've processed all expected tabs (like MV2)
   if (PopupState.loadedTabs >= PopupState.expectedTabs) {
-    // #!# console.log("Loading complete, setting isLoading to false");
+    // #!# // console.log("Loading complete, setting isLoading to false");
     PopupState.isLoading.set(false);
     PopupState.hasShownInitialContent = true; // Mark that we've shown content
     updateMainUI();
@@ -1080,7 +1228,7 @@ function checkLoadingComplete() {
 
     // Refresh current states immediately after initial load to fix button states
     setTimeout(() => {
-      // #!# console.log("Post-load state refresh to fix button states");
+      // #!# // console.log("Post-load state refresh to fix button states");
       refreshCurrentStates();
     }, 200); // Slightly longer delay to ensure everything is ready
   }
@@ -1093,12 +1241,7 @@ function setupReactiveUpdates() {
 
   // Listen for tab collection changes (MV2-style reactive updates)
   PopupState.tabs.subscribe(() => {
-    // #!# console.log("Enabled tabs collection changed, updating UI");
-    updateMainUI();
-  });
-
-  PopupState.disabledTabs.subscribe(() => {
-    // #!# console.log("Disabled tabs collection changed, updating UI");
+    // #!# // console.log("Enabled tabs collection changed, updating UI");
     updateMainUI();
   });
   // No need to listen to individual tab changes since they're reactive via observables
@@ -1107,7 +1250,7 @@ function setupReactiveUpdates() {
 
 // Initialize
 document.addEventListener("DOMContentLoaded", function() {
-  console.log("*** INITIALIZING REACTIVE POPUP (NO FLICKER) ***");
+  // console.log("*** INITIALIZING REACTIVE POPUP (NO FLICKER) ***");
 
   // Bind footer links
   document.getElementById("options-link").onclick = () => {
@@ -1122,8 +1265,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Listen for real-time updates (MV2-style dynamic tab creation)
   chrome.runtime.onMessage.addListener((request) => {
+    console.log("Popup received message:", request.action, request);
     if (request.action === "update_popup_state" && request.stateData) {
       updatePopupState(request.stateData, request.fromTab);
+    } else if (request.action === "new_music_tab_detected" && request.tabData) {
+      console.log("Popup: New music tab detected:", request.tabData);
+      // Refresh popup data to include new tab (shorter delay since tab is confirmed ready)
+      setTimeout(() => {
+        console.log("Popup: Refreshing data for new tab...");
+        loadInitialData();
+      }, 500);
     }
   });
 
@@ -1132,16 +1283,26 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Refresh states when popup gains focus (user opens popup)
   window.addEventListener("focus", () => {
-    console.log("Popup gained focus, refreshing states");
+    // console.log("Popup gained focus, refreshing states");
     refreshCurrentStates();
   });
 
   // IMPROVED: Show empty state first, then load data without loading indicator unless needed
   updateMainUI(); // Show empty state immediately
 
-  setTimeout(() => {
+  // Load sorting preference from storage
+  chrome.storage.sync.get(["popup-sort-by-priority"], (result) => {
+    const sortByPriority = result["popup-sort-by-priority"] || false;
+    PopupState.sortByPriority.set(sortByPriority);
+  });
+
+  // Subscribe to sorting preference changes to update UI
+  PopupState.sortByPriority.subscribe(() => {
+    updateMainUI(); // Re-sort and update UI when preference changes
+  });  setTimeout(() => {
     loadInitialData();
   }, 10); // Minimal delay to ensure DOM is ready
 
-  console.log("*** REACTIVE POPUP INITIALIZED - ZERO FLICKER ***");
+  // console.log("*** REACTIVE POPUP INITIALIZED - ZERO FLICKER ***");
 });
+

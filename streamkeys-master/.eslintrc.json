@@ -16,7 +16,8 @@
     "module": true,
     "$data": true,
     "importScripts": true,
-    "STREAMKEYS_SITES": true
+    "STREAMKEYS_SITES": true,
+    "componentHandler": true
   },
   "rules": {
     "eol-last": ["error", "always"],
@@ -25,7 +26,7 @@
     "no-console": ["error", { "allow": ["log", "warn", "error"] }],
     "no-trailing-spaces": ["error"],
     "no-undef": "error",
-    "no-unused-vars": "error",
+    "no-unused-vars": ["error", { "args": "none" }],
     "quotes": ["error", "double"],
     "strict": ["error", "global"]
   },

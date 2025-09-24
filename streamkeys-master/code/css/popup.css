@@ -1,3 +1,30 @@
+/* Material Icons font for MV3 - replaces Google Fonts CDN */
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/MaterialIcons-Regular.woff2') format('woff2'),
+       url('../fonts/MaterialIcons-Regular.woff') format('woff');
+}
+
+/* Material Icons class styling */
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
 /* Streamkeys MV3 Popup - V2 Compatible Styling */
 html {
   padding: 0;
@@ -85,7 +112,7 @@ a:visited {
 }
 
 .site-controls {
-  min-height: 60px;
+  min-height: 48px; /* Reduced from 60px to match tab container (20% shorter) */
   overflow: hidden;
 }
 
@@ -115,7 +142,7 @@ a:visited {
   display: flex;
   align-items: center;
   padding: 0;
-  margin-left: 6px;
+  margin: 0 auto;
   height: 22px;
   margin-bottom: 6px;
   overflow: hidden;
@@ -168,14 +195,36 @@ a:visited {
 }
 
 .site-tab-container {
-  min-height: 60px;
+  min-height: 48px; /* Reduced from 60px (20% shorter) */
   overflow: hidden;
 }
 
-/* FIXED: Don't grey out entire tab container */
+/* Enhanced disabled tab styling - more visually distinct */
+.site-tab-container.disabled {
+  background: #f5f5f5; /* Light grey background for disabled tabs */
+  /* Removed left border to fix visual issues */
+}
+
 .site-tab-container.disabled .site-data,
 .site-tab-container.disabled .song-data {
-  opacity: 0.5;
+  opacity: 0.65; /* Slightly more visible than before */
+}
+
+/* Make site title and media title more grey for disabled tabs */
+.site-tab-container.disabled .site-title,
+.site-tab-container.disabled .song-text {
+  color: #777; /* More grey text for disabled tabs */
+}
+
+/* Keep control bar background at full opacity, brighten media keys slightly */
+.site-tab-container.disabled .player-controls-button-like,
+.site-tab-container.disabled .player-controls-button-dislike,
+.site-tab-container.disabled .player-controls-button-play,
+.site-tab-container.disabled .player-controls-button-prev,
+.site-tab-container.disabled .player-controls-button-next {
+  opacity: 0.6; /* Brightened from 0.3 to 0.6 - more visible */
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .site-favicon {
@@ -217,7 +266,7 @@ a:visited {
 
 .player-controls-container {
   background-color: #2880c7;
-  padding: 2px 0;
+  padding: 6px 0; /* Reduced from 2px to maintain 15% height reduction */
   -webkit-user-select: none;
   user-select: none;
   display: flex;
@@ -257,7 +306,7 @@ a:visited {
   border: none;
   color: white;
   min-width: 40px;
-  height: 36px;
+  height: 30px; /* Reduced from 36px to 30px (15% reduction) */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -277,7 +326,9 @@ a:visited {
 }
 
 .player-controls-button.active {
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Settings button specific styling for proper positioning */
@@ -373,24 +424,28 @@ a:visited {
   border-right: 1px solid #2880c7;
   border-bottom: 1px solid #2880c7;
   height: 44px;
-  padding: 8px;
-  text-align: center;
+  padding: 0;
   background: white;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
+  gap: 12px;
 }
 
 .options button {
-  margin: 0 4px;
-  flex: 1;
-  max-width: 80px;
+  margin: 0;
+  flex-shrink: 0;
+  min-width: 70px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 11px;
+  text-transform: uppercase;
 }
 
-/* Player controls container styling */
+/* Player controls container styling - 15% shorter height */
 .player-controls-container {
   background-color: #2880c7;
-  padding: 8px 4px;
+  padding: 6px 4px; /* Reduced from 8px to 6px (25% reduction for 15% overall height reduction) */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -403,7 +458,7 @@ a:visited {
   border: none;
   color: white;
   min-width: 40px;
-  height: 36px;
+  height: 30px; /* Reduced from 36px to 30px (15% reduction) */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -411,10 +466,13 @@ a:visited {
   font-size: 18px;
   margin: 0 2px;
   border-radius: 2px;
+  /* FIXED: Ensure buttons don't have circular styling */
+  padding: 4px;
 }
 
 .player-controls-container .player-controls-button:hover {
   background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px; /* Keep square/rectangular shape */
 }
 
 .player-controls-container .player-controls-button:disabled,
@@ -424,7 +482,9 @@ a:visited {
 }
 
 .player-controls-container .player-controls-button.active {
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Site settings styling */
@@ -497,7 +557,7 @@ a:visited {
 /* Site tab container styling */
 .site-tab-container {
   border-bottom: 1px solid #e0e0e0;
-  margin-bottom: 8px;
+  margin-bottom: 0; /* Removed margin to eliminate white gaps */
 }
 
 .site-tab-container:last-child {
@@ -505,19 +565,19 @@ a:visited {
   margin-bottom: 0;
 }
 
-/* FIXED: Don't grey out the entire container - only specific elements */
+/* UPDATED: Enhanced disabled tab styling that matches above */
 .site-tab-container.disabled .site-data,
 .site-tab-container.disabled .song-data {
-  opacity: 0.6;
+  opacity: 0.65; /* Consistent with styling above */
 }
 
-/* Keep control bar background at full opacity, only dim individual disabled buttons */
+/* Keep control bar background at full opacity, brighten media keys for better visibility */
 .site-tab-container.disabled .player-controls-button-like,
 .site-tab-container.disabled .player-controls-button-dislike,
 .site-tab-container.disabled .player-controls-button-play,
 .site-tab-container.disabled .player-controls-button-prev,
 .site-tab-container.disabled .player-controls-button-next {
-  opacity: 0.3;
+  opacity: 0.6; /* Brightened from 0.3 - more visible media controls */
   pointer-events: none;
   cursor: not-allowed;
 }

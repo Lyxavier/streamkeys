@@ -6,8 +6,8 @@
 
 /* eslint-disable no-undef */
 // For now, disable options functionality in MV3
-// #!# console.log("Options page loaded - MV3 compatibility mode");
-// #!# console.log("Note: Full options functionality requires migration from require.js to native modules");
+console.log("Options page loaded - MV3 compatibility mode");
+console.log("Note: Full options functionality requires migration from require.js to native modules");
 
 // Basic fallback for critical functionality
 var OptionsViewModel = function OptionsViewModel() {
@@ -76,6 +76,11 @@ var OptionsViewModel = function OptionsViewModel() {
     self.singlePlayerMode.subscribe(function(value) {
       chrome.storage.sync.set({ "hotkey-single_player_mode": value });
       if (!value) self.useMPRIS(false);
+    });
+
+    self.prioritySorting = ko.observable(obj["priority-sorting"] !== undefined ? obj["priority-sorting"] : false); // Default to false (native order)
+    self.prioritySorting.subscribe(function(value) {
+      chrome.storage.sync.set({ "priority-sorting": value });
     });
 
     self.settingsInitialized(true);
