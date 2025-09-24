@@ -30,7 +30,7 @@
     // Send a ready signal to background (optional)
     chrome.runtime.sendMessage({action: "controller_ready", siteName: this.siteName}, function() {
       if (chrome.runtime.lastError) {
-                // console.log("Background not ready yet:", chrome.runtime.lastError.message); // DEBUG
+        // console.log("Background not ready yet:", chrome.runtime.lastError.message); // DEBUG
       }
     });
 
@@ -61,18 +61,21 @@
     // Listen for play/pause button clicks - but debounce to prevent spam
     document.addEventListener("click", function(e) {
       if (e.target.closest(self.selectors.playPause)) {
-                // console.log("Play/pause button clicked in page, updating state"); // DEBUG
-
-      // Detect YouTube page navigation
-      let lastUrl = window.location.href;
-      new MutationObserver(() => {
-        if (window.location.href !== lastUrl) {
-          lastUrl = window.location.href;
-          // console.log("Page navigation detected, updating state"); // DEBUG
-        // Only update after a short delay to let YouTube update
+        // console.log("Play/pause button clicked in page, updating state"); // DEBUG
         debounceStateUpdate(500);
       }
     }, { passive: true });
+
+    // Detect YouTube page navigation
+    let lastUrl = window.location.href;
+    new MutationObserver(() => {
+      if (window.location.href !== lastUrl) {
+        lastUrl = window.location.href;
+        // console.log("Page navigation detected, updating state"); // DEBUG
+        // Only update after a short delay to let YouTube update
+        debounceStateUpdate(500);
+      }
+    }).observe(document, { childList: true, subtree: true });
 
     // Listen for navigation changes (when switching videos)
     window.addEventListener("popstate", function() {
@@ -80,7 +83,7 @@
       debounceStateUpdate(1000);
     }, { passive: true });
 
-    // Reduced periodic state updates - matches MV2"s 200ms interval behavior (every 5 seconds instead of 10)
+    // Reduced periodic state updates - matches MV2's 200ms interval behavior (every 5 seconds instead of 10)
     setInterval(function() {
       // console.log("Periodic state update (5s interval)"); // DEBUG
       self.getPlayerState();
@@ -331,7 +334,7 @@
         // console.log("Player focused");
       }
 
-      // Use spacebar - YouTube"s primary play/pause shortcut
+      // Use spacebar - YouTube's primary play/pause shortcut
       var spaceEvent = new KeyboardEvent("keydown", {
         key: " ",
         code: "Space",
@@ -367,19 +370,15 @@
     return;
   }
 
-  try {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", function() {
-        if (!window.streamkeysController) {
-          // console.log("DOM loaded, initializing YouTube Controller...");
-          new YouTubeController();
-        }
-      }, { passive: true });
-    } else {
-      // console.log("DOM already ready, initializing YouTube Controller immediately...");
-      new YouTubeController();
-    }
-  } catch (error) {
-    // console.error("YouTube Controller initialization failed:", error);
-  }})();
-
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() {
+      if (!window.streamkeysController) {
+        // console.log("DOM loaded, initializing YouTube Controller...");
+        new YouTubeController();
+      }
+    }, { passive: true });
+  } else {
+    // console.log("DOM already ready, initializing YouTube Controller immediately...");
+    new YouTubeController();
+  }
+})();

@@ -1,4 +1,4 @@
-# Streamkeys v1.8.5[![Version](https://img.shields.io/github/package-json/v/Lyxavier/streamkeys/V3-Manifest)](https://github.com/Lyxavier/streamkeys)
+# Streamkeys v1.8.6[![Version](https://img.shields.io/github/package-json/v/Lyxavier/streamkeys/V3-Manifest)](https://github.com/Lyxavier/streamkeys)
 
 Chrome extension to send "global" (ie. across the browser) hotkeys to various online media players.
 
@@ -11,6 +11,9 @@ Disclaimer: was edited with Claude Sonnet 4 to be able to get this working.
 I have spend many hours debugging and testing this to work, There are some sites that I have not tested this on.
 
 I mainly used it as a youtube media controller, If there's enough want for certain sites that have errors or don't work, let me know.
+
+Half the option features do not work, This is next on my list to fix.
+
 
 ## Installation
 

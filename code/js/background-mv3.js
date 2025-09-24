@@ -12,10 +12,10 @@ try {
 
   // Debug: Check specific sites
   if (typeof STREAMKEYS_SITES === "object" && STREAMKEYS_SITES) {
-
+    // Sites loaded successfully
   }
 } catch (error) {
-
+  // Error loading sites - handled gracefully
 }
 
 /**
